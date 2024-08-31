@@ -1,44 +1,12 @@
 //La compilación no debe arrojar warnings del compilador, ni del linter clippy.
 use std::fs::OpenOptions;
-use std::io::{self, BufRead, BufWriter, Write};
-use std::os::unix::fs::PermissionsExt;
+use std::io::{self, BufRead, BufWriter, Write,BufReader};
 use std::path::{self, Path};
 use std::fs::File;
-use std::collections::HashMap;
-
-
-// Por enunciado solo recibiremos datos del tipo String o int, entonces necesito poder identificarlos, ya que el encabezado puede cambiar
-#[derive(Debug)]
-enum valores_del_csv {
-    StringValue(String),
-    IntValue(i32),
-}
-
-
-//En principio el valor es un string, ya que lo saco del csv. Ahora, busco transformarlo a int, en caso de no poder hacerlo lo dejo como String
-fn transformar_valor(valor:&String) -> valores_del_csv{
-
-    if let Ok(int_value) = valor.parse:: <i32>() {
-        return valores_del_csv::IntValue(int_value);
-    }
-
-    else {
-        valores_del_csv::StringValue(valor.to_string())
-    }
-
-}
-
-//Creo una funcion para ver si funciona el transformar_valors
-fn procesar_valor(valor: valores_del_csv) {
-    match valor {
-        valores_del_csv::StringValue(s) => println!("Es una cadena: {}", s),
-        valores_del_csv::IntValue(i) => println!("Es un entero: {}", i),
-    }
-}
 
 
 //Por ahora leo el archivo, saco el header y atajo el error asi
-fn leer_header(archivo: &String) -> io::Result<Vec<String>>{
+fn leer_header(archivo: &String) ->  io::Result<Vec<String>>{
     let path = Path::new(archivo); 
     let file = File::open(&path)?; 
     let reader = io::BufReader::new(file); 
@@ -56,63 +24,11 @@ fn leer_header(archivo: &String) -> io::Result<Vec<String>>{
         Ok((header)) // Devuelve el vector de 
       
         } else {
-            Err(io::Error::new(io::ErrorKind::NotFound, "El archivo está vacío o no tiene encabezados"))
+            Err(io::Error::new(io::ErrorKind::NotFound, "Error al leer el archivo"))
         }
 
    
 }
-
-
-//Es un copy paste de la funcion de arriba, pero bueno desp veo si la puedo modularizar
-fn leer_registros(archivo: &String) -> io::Result<Vec<String>>{
-    let path = Path::new(archivo); 
-    let file = File::open(&path)?; 
-    let reader = io::BufReader::new(file); 
-
-    let mut lineas = reader.lines();
-
-    lineas.next();// No quiero leer la primera linea ya que es el header!
-
-
-    if let Some(registro) = lineas.next() {
-        let registro = registro?;
-        let registro: Vec<String> = registro.split(',')
-                                                .map(|s| s.trim().to_string())
-                                                .collect();
-        
-          Ok(registro) // Devuelve el vector de 
-        
-          } else {
-              Err(io::Error::new(io::ErrorKind::NotFound, "El archivo está vacío o no tiene registros"))
-          }
-
-}
-
-
-//Ahora,teniendo el header necesito saber el valor que las columnas deberia tener, necesito leer otra linea para ingresar los datos
-fn obtener_valores_del_header(header: Vec<String>, registro: Vec<String>) -> io::Result<HashMap<String, valores_del_csv>>{
-    let mut mapa = HashMap::new();
-    
-    if registro.len() == header.len(){ 
-
-        for (columna, valor) in header.into_iter().zip(registro){       
-            
-                mapa.insert(columna, transformar_valor(&valor));
-                
-                
-        }
-        
-        Ok(mapa)
-    }
-
-    else {
-
-      Err(io::Error::new(io::ErrorKind::NotFound, "No coinciden las dimensiones del hashmap"))
-          
-}
-
-}
-
 
 fn obtener_primera_palabra(cadena: &str) -> String {
 
@@ -123,11 +39,11 @@ fn obtener_primera_palabra(cadena: &str) -> String {
         palabra.to_string()
 
     } else {
-        String::new() // -> Si no hay palabras devuelvo una cadena sin nada
+        String::new() 
     }
 }
 
-//Me interesa separarlo en dos partes, por un lado lo que este desp del value y lo que este antes!
+
 fn separar_datos(consulta_sql:String) -> (String, String){
 
     let partes: Vec<&str> = consulta_sql.split("VALUES").collect();
@@ -148,7 +64,6 @@ fn separar_datos(consulta_sql:String) -> (String, String){
 
 
 fn escribir_csv(ruta_csv: String, linea:&str)->io::Result<()>{ 
-
   
     let mut archivo = OpenOptions::new()
     .append(true)
@@ -198,7 +113,6 @@ fn insertar_datos(consulta_sql: String,ruta_del_archivo: String) {
     let ruta = obtener_ruta_del_csv(ruta_del_archivo,&direccion_y_columnas);
     let valores = crear_matriz(valores);
 
-    println!("{}", ruta);
     
     for (i, fila) in valores.iter().enumerate(){
        let linea = fila.join(", ");
@@ -210,6 +124,97 @@ fn insertar_datos(consulta_sql: String,ruta_del_archivo: String) {
 }
 
 
+fn separar_datos_update(consulta_sql:String) -> Result<(String, Vec<String>,Vec<String>),&'static str>{
+
+    let partes: Vec<&str> = consulta_sql.split("SET").collect();
+    let nombre_del_csv = partes[0].trim().replace("UPDATE","").replace(" ", "");
+    let valores = partes[1].trim().trim_end_matches(';');
+
+    match valores.split_once("WHERE"){
+        
+        Some((actualizar,donde_actualizar)) => {
+
+            let actualizar = actualizar.replace("=", "").replace(",","" );
+            let actualizar:Vec<String> = actualizar.split_whitespace().map(|s| s.to_string()).collect();
+        
+            let donde_actualizar = donde_actualizar.replace("=", "").replace(",","" );
+            let donde_actualizar:Vec<String> = donde_actualizar.split_whitespace().map(|s| s.to_string()).collect();
+        
+            
+            Ok((nombre_del_csv,actualizar, donde_actualizar))}
+        None => Err(("Error al escribir la consulta"))
+    }
+    
+}
+
+
+
+
+fn actualizar_csv(ruta_csv:String,header:Vec<String>,actualizar:Vec<String>,clave_para_actualizar:Vec<String>)-> io::Result<()>{
+
+    let archivo = File::open(ruta_csv)?;
+    let lector = BufReader::new(archivo);
+
+    let pos = header.iter().position(|s| *s == clave_para_actualizar[0].to_string());
+    
+    let indice = match pos {
+
+        Some(i) => i,
+
+        None => {
+            println!("Error no existe esa clave!");
+            return Err(io::Error::new(io::ErrorKind::NotFound, "Error no existe esa clave en el vector!"));
+        },
+        
+    }; 
+
+    //Quiero encontrar la clave en alguna linea y si la encuentro la reemplazo por los valores que me dieron
+    for linea in lector.lines(){
+        let mut linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()) .collect();
+        
+        //Si nuestro indice coincide lo queremos cambiar!
+        if clave_para_actualizar[1] == linea_csv[indice] {
+
+            for (i,valor) in header.iter().enumerate(){
+
+            }
+            
+
+        } else {}
+    }
+
+    Ok(())
+}
+
+
+fn actualizar_datos(consulta_sql: String, ruta_del_archivo: String){
+
+    let (nombre_del_csv,actualizar, donde_actualizar) =  match separar_datos_update(consulta_sql) {
+        Ok((nombre_del_csv,actualizar,donde_actualizar)) => {(nombre_del_csv,actualizar, donde_actualizar)}
+
+        Err(e) => {println!("Error: {}", e);
+        return; },
+        
+    };
+   
+    let ruta_csv = obtener_ruta_del_csv(ruta_del_archivo,&nombre_del_csv);
+
+    let header = match leer_header(&ruta_csv) {
+        Ok(header) => {header}
+
+        Err(e) => {println!("Error: {}", e);
+        return;}, 
+    };
+    
+
+    actualizar_csv(ruta_csv, header,actualizar,donde_actualizar);
+    
+
+    }
+
+
+
+
 fn realizar_consulta(consulta_sql:String ,ruta: String) {
     
     
@@ -218,11 +223,18 @@ fn realizar_consulta(consulta_sql:String ,ruta: String) {
         insertar_datos(consulta_sql, ruta)
     }
 
+    else if obtener_primera_palabra(&consulta_sql) == "UPDATE"  {
+
+        actualizar_datos(consulta_sql,ruta)
+    }
+
+
     else {
-        println!("Error al escribir la consulta")
+        println!("No existe la consulta escrita!")
     }
     
 }
+
 
 fn main() {
     // Simulamos lo que recibirías por la consola
@@ -231,7 +243,7 @@ fn main() {
     let ruta = &consulta_completa[1];  //  -> ruta a la carpeta de csv
     let consulta_sql: &String = &consulta_completa[2];  // - > consulta
 
- 
+   
     realizar_consulta(consulta_sql.to_string(),ruta.to_string())
 
 }
