@@ -1,7 +1,8 @@
 //La compilación no debe arrojar warnings del compilador, ni del linter clippy.
-
-use std::io::{self, BufRead};
-use std::path::Path;
+use std::fs::OpenOptions;
+use std::io::{self, BufRead, BufWriter, Write};
+use std::os::unix::fs::PermissionsExt;
+use std::path::{self, Path};
 use std::fs::File;
 use std::collections::HashMap;
 
@@ -34,21 +35,6 @@ fn procesar_valor(valor: valores_del_csv) {
         valores_del_csv::IntValue(i) => println!("Es un entero: {}", i),
     }
 }
-
-/* 
-fn leer_archivos(archivo: &String) -> io::Result<()>{
-
-    let path = Path::new(archivo); // Ruta del archivo  
-    let file = File::open(&path)?; // Abro el archivo
-    let reader = io::BufReader::new(file); // creo un reader para leer el archivo
-
-    for linea in reader.lines() {
-        println!("{}", linea?);
-    }
-
-    Ok(())
-}
-*/
 
 
 //Por ahora leo el archivo, saco el header y atajo el error asi
@@ -141,48 +127,86 @@ fn obtener_primera_palabra(cadena: &str) -> String {
     }
 }
 
-
 //Me interesa separarlo en dos partes, por un lado lo que este desp del value y lo que este antes!
-fn separar_datos(consulta_sql:String) -> Result<Vec<String>, &'static str>{
-    let partes: Vec<&str> = consulta_sql.split(" VALUES ").collect();
+fn separar_datos(consulta_sql:String) -> (String, String){
 
-    if partes.len() == 2 {
-        
-        let primera_parte = &partes[0]; //INsert into...
-        let segunda_parte = &partes[1]; // Nuestros valores! los cuales queremos insertar!
+    let partes: Vec<&str> = consulta_sql.split("VALUES").collect();
 
-        let valores = segunda_parte.replace("(", "");
+    let insert = partes[0].trim().to_string();
+    let valores = partes[1].trim().trim_end_matches(';').to_string();
 
-        let valores = valores.replace(")", "");
+    let mut palabras: Vec<&str> = insert.split_whitespace().collect();
 
-        let columnas: Vec<&str> = primera_parte.splitn(2, " (").collect(); //Divido la cadena en 2
-        let nombre_del_csv = columnas[0].replace("INSERT INTO ", ""); 
+    palabras.drain(0..2); // Quito el insert y el into
 
-        let nombre_cols = columnas[1].replace("(", "");
-        let nombre_cols = nombre_cols.replace(")", "");
-        
-        let mut componentes_consulta: Vec<String> = Vec::new();
-        componentes_consulta.push(nombre_del_csv);
-        componentes_consulta.push(nombre_cols);
-        componentes_consulta.push(valores);
+    let direccion_y_columnas = palabras.join(" ");
 
-        Ok(componentes_consulta)
-    }
+    (direccion_y_columnas, valores)
 
-    else {
-        Err("Error al separar el string!")
-    }
+}
+  
+
+
+fn escribir_csv(ruta_csv: String, linea:&str)->io::Result<()>{ 
+
+  
+    let mut archivo = OpenOptions::new()
+    .append(true)
+    .open(ruta_csv)?;
+
+
+    writeln!(archivo, "{}", linea)?;
+
+    Ok(())
+
+}
+
+
+fn crear_matriz(valores:String)-> Vec<Vec<String>>{
+
+    let valores = valores.trim_matches(|c| c == '(' || c == ')')
+    .split("), (");
+
+    let valores = valores
+        .map(|fila| {
+            fila
+                .split(',') // Divide los valores dentro de cada tupla
+                .map(|v| v.trim().trim_matches('\'').to_string()) // Limpia espacios y comillas
+                .collect::<Vec<String>>() 
+        })
+        .collect::<Vec<Vec<String>>>();
+    
+    valores
+
+}
+
+fn obtener_ruta_del_csv(ruta:String,nombre_del_csv:&str) -> String{
+
+    let palabras: Vec<&str> = nombre_del_csv.split(" ").collect();
+    let nombre_del_csv = palabras[0];
+
+    let ruta_de_csv = format!("{}{}{}{}",ruta,"/",nombre_del_csv,".csv");
+
+    return ruta_de_csv.to_string();
+
 }
 
 
 fn insertar_datos(consulta_sql: String,ruta_del_archivo: String) {
-    let header = leer_header(&ruta_del_archivo);
+    let (direccion_y_columnas,valores) = separar_datos(consulta_sql);
 
-    let componentes_consulta = separar_datos(consulta_sql);
-   
-    for i in &componentes_consulta{
-        println!("{}", i);
+    let ruta = obtener_ruta_del_csv(ruta_del_archivo,&direccion_y_columnas);
+    let valores = crear_matriz(valores);
+
+    println!("{}", ruta);
+    
+    for (i, fila) in valores.iter().enumerate(){
+       let linea = fila.join(", ");
+
+        escribir_csv(ruta.to_string(), &linea);
     }
+    
+
 }
 
 
@@ -205,7 +229,7 @@ fn main() {
     let consulta_completa: Vec<String> = std::env::args().collect();
 
     let ruta = &consulta_completa[1];  //  -> ruta a la carpeta de csv
-    let mut consulta_sql: &String = &consulta_completa[2];  // - > consulta
+    let consulta_sql: &String = &consulta_completa[2];  // - > consulta
 
  
     realizar_consulta(consulta_sql.to_string(),ruta.to_string())
