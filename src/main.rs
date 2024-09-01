@@ -1,14 +1,14 @@
 //La compilación no debe arrojar warnings del compilador, ni del linter clippy.
 use std::fs::OpenOptions;
-use std::io::{self, BufRead, BufWriter, Write,BufReader};
-use std::path::{self, Path};
+use std::io::{self, BufRead, Write,BufReader};
+use std::path::Path;
 use std::fs::File;
-
+use std::fs::rename;
 
 //Por ahora leo el archivo, saco el header y atajo el error asi
 fn leer_header(archivo: &String) ->  io::Result<Vec<String>>{
     let path = Path::new(archivo); 
-    let file = File::open(&path)?; 
+    let file = File::open(path)?; 
     let reader = io::BufReader::new(file); 
 
     let mut lineas = reader.lines();
@@ -21,7 +21,7 @@ fn leer_header(archivo: &String) ->  io::Result<Vec<String>>{
                                               .map(|s| s.trim().to_string())
                                               .collect();
 
-        Ok((header)) // Devuelve el vector de 
+        Ok(header) // Devuelve el vector de 
       
         } else {
             Err(io::Error::new(io::ErrorKind::NotFound, "Error al leer el archivo"))
@@ -102,7 +102,7 @@ fn obtener_ruta_del_csv(ruta:String,nombre_del_csv:&str) -> String{
 
     let ruta_de_csv = format!("{}{}{}{}",ruta,"/",nombre_del_csv,".csv");
 
-    return ruta_de_csv.to_string();
+    ruta_de_csv.to_string()
 
 }
 
@@ -114,10 +114,10 @@ fn insertar_datos(consulta_sql: String,ruta_del_archivo: String) {
     let valores = crear_matriz(valores);
 
     
-    for (i, fila) in valores.iter().enumerate(){
+    for fila in valores.iter(){
        let linea = fila.join(", ");
 
-        escribir_csv(ruta.to_string(), &linea);
+        let _ = escribir_csv(ruta.to_string(), &linea);
     }
     
 
@@ -132,30 +132,32 @@ fn separar_datos_update(consulta_sql:String) -> Result<(String, Vec<String>,Vec<
 
     match valores.split_once("WHERE"){
         
-        Some((actualizar,donde_actualizar)) => {
+        Some((campos,clave)) => {
 
-            let actualizar = actualizar.replace("=", "").replace(",","" );
-            let actualizar:Vec<String> = actualizar.split_whitespace().map(|s| s.to_string()).collect();
+            let campos = campos.replace("=", "").replace(",","" );
+            let campos:Vec<String> = campos.split_whitespace().map(|s| s.to_string()).collect();
         
-            let donde_actualizar = donde_actualizar.replace("=", "").replace(",","" );
-            let donde_actualizar:Vec<String> = donde_actualizar.split_whitespace().map(|s| s.to_string()).collect();
+            let clave = clave.replace("=", "").replace(",","" );
+            let clave:Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
         
             
-            Ok((nombre_del_csv,actualizar, donde_actualizar))}
-        None => Err(("Error al escribir la consulta"))
+            Ok((nombre_del_csv,campos, clave))}
+        None => Err("Error al escribir la consulta")
     }
     
 }
 
+fn actualizar_csv(ruta_csv:String,header:Vec<String>,campos:Vec<String>,clave:Vec<String>)-> io::Result<()>{
 
-
-
-fn actualizar_csv(ruta_csv:String,header:Vec<String>,actualizar:Vec<String>,clave_para_actualizar:Vec<String>)-> io::Result<()>{
-
-    let archivo = File::open(ruta_csv)?;
+    let archivo = File::open(&ruta_csv)?;
     let lector = BufReader::new(archivo);
+    let archivo_temporal = "auxiliar.csv";
+    
+    let mut archivo_tem = File::create(archivo_temporal)?;
 
-    let pos = header.iter().position(|s| *s == clave_para_actualizar[0].to_string());
+
+
+    let pos = header.iter().position(|s| *s == clave[0].to_string());
     
     let indice = match pos {
 
@@ -163,7 +165,7 @@ fn actualizar_csv(ruta_csv:String,header:Vec<String>,actualizar:Vec<String>,clav
 
         None => {
             println!("Error no existe esa clave!");
-            return Err(io::Error::new(io::ErrorKind::NotFound, "Error no existe esa clave en el vector!"));
+            return Err(io::Error::new(io::ErrorKind::NotFound, "Error no existe esa clave!"));
         },
         
     }; 
@@ -172,16 +174,29 @@ fn actualizar_csv(ruta_csv:String,header:Vec<String>,actualizar:Vec<String>,clav
     for linea in lector.lines(){
         let mut linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()) .collect();
         
-        //Si nuestro indice coincide lo queremos cambiar!
-        if clave_para_actualizar[1] == linea_csv[indice] {
+        //Si el valor de la clave coicide, encontre el elemento que quiero cambiar
+        if clave[1] == linea_csv[indice] {
 
-            for (i,valor) in header.iter().enumerate(){
+            for (i,valor_para_act) in campos.iter().enumerate(){
 
+                 for (j, val_header) in header.iter().enumerate() {
+
+                    if valor_para_act == val_header { linea_csv[j] = campos[i+1].to_string(); }
+
+                 }  
+            
             }
             
+            let nueva_linea = linea_csv.join(",");
+            writeln!(archivo_tem,"{}",nueva_linea)?;
 
-        } else {}
+        } else {
+            let linea = linea_csv.join(",");
+            let _ = writeln!(archivo_tem,"{}",linea);    
+                
+            }
     }
+    let _ = rename(archivo_temporal,ruta_csv);
 
     Ok(())
 }
@@ -189,8 +204,8 @@ fn actualizar_csv(ruta_csv:String,header:Vec<String>,actualizar:Vec<String>,clav
 
 fn actualizar_datos(consulta_sql: String, ruta_del_archivo: String){
 
-    let (nombre_del_csv,actualizar, donde_actualizar) =  match separar_datos_update(consulta_sql) {
-        Ok((nombre_del_csv,actualizar,donde_actualizar)) => {(nombre_del_csv,actualizar, donde_actualizar)}
+    let (nombre_del_csv,campos_para_actualizar, donde_actualizar) =  match separar_datos_update(consulta_sql) {
+        Ok((nombre_del_csv,campos_para_actualizar,donde_actualizar)) => {(nombre_del_csv,campos_para_actualizar, donde_actualizar)}
 
         Err(e) => {println!("Error: {}", e);
         return; },
@@ -207,7 +222,7 @@ fn actualizar_datos(consulta_sql: String, ruta_del_archivo: String){
     };
     
 
-    actualizar_csv(ruta_csv, header,actualizar,donde_actualizar);
+    let _ = actualizar_csv(ruta_csv, header,campos_para_actualizar,donde_actualizar);
     
 
     }
