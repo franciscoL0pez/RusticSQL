@@ -1,10 +1,10 @@
+use std::alloc::LayoutError;
 //La compilación no debe arrojar warnings del compilador, ni del linter clippy.
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, Write,BufReader};
 use std::path::Path;
 use std::fs::File;
 use std::fs::rename;
-use std::vec;
 
 //Por ahora leo el archivo, saco el header y atajo el error asi
 fn leer_header(archivo: &String) ->  io::Result<Vec<String>>{
@@ -332,17 +332,16 @@ fn separar_datos_select(consulta_sql: String)-> Result<(String,String ,Vec<Strin
         let nombre_csv = nombre_csv_y_columnas[1].trim().to_string();
         let columnas = nombre_csv_y_columnas[0].trim().to_string();
 
-       
+        
 
-        let clave = vec[1].replace(";","").trim().to_string();
-        let clave:Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
+        let condiciones = vec[1].replace(";","").trim().to_string();
+        let condiciones:Vec<String> = condiciones.split_whitespace().map(|s| s.to_string()).collect();
 
-        println!("{}", nombre_csv);
         println!("{}", columnas);
-        println!("{:?}",clave);
-    
+        println!("{}", nombre_csv);
+        println!("{:?}", condiciones);
 
-        Ok((nombre_csv,columnas,clave))}
+        Ok((nombre_csv,columnas,condiciones))}
 
     _ => Err("Error al leer los datos de la consulta")
     ,
@@ -352,16 +351,69 @@ fn separar_datos_select(consulta_sql: String)-> Result<(String,String ,Vec<Strin
 
 }
 
-fn procesar_condiciones(clave:Vec<String>){
 
+enum Operador {
+    Igual,
+    Mayor,
+    Menor,
+    And,
+    Not,
+    Or
 }
 
+struct Condicion {
+    columna: String ,
+    operador: Operador,
+    valor:String
+} 
+
+fn obtener_op(op: &str) -> Option<Operador> {
+
+    match op {
+
+        "=" => Some(Operador::Igual),
+        "<" => Some(Operador::Menor),
+        ">" => Some(Operador::Mayor),
+        "AND" => Some(Operador::And),
+        "OR" => Some(Operador::Or),
+        "NOT" => Some(Operador::Not),
+
+
+        _ => None
+    }
+}
+
+
+fn procesar_condiciones(condiciones:Vec<String>) -> Vec<Condicion>{
+    
+    let mut condiciones_parseadas: Vec<Condicion> = Vec::new(); 
+    for i in (0..condiciones.len()).step_by(4){
+
+        if let (Some(op), Some(val)) = (obtener_op(&condiciones[i + 1]), condiciones.get(i + 2)) {
+
+            let c = &condiciones[i];
+            
+            let condicion = Condicion{
+                columna:c.to_string(),
+                operador:op,
+                valor: val.to_string()
+
+            };
+
+            condiciones_parseadas.push(condicion);
+        }
+         
+    };
+
+    
+    condiciones_parseadas 
+}
 
 
 fn consultar_datos(consulta_sql: String, ruta:String){
 
-    let (nombre_csv,columnas,clave) =  match separar_datos_select(consulta_sql) {
-        Ok((nombre_csv,columnas,clave)) => {(nombre_csv,columnas,clave)}
+    let (nombre_csv,columnas,condiciones) =  match separar_datos_select(consulta_sql) {
+        Ok((nombre_csv,columnas,condiciones)) => {(nombre_csv,columnas,condiciones)}
 
         Err(e) => {println!("Error: {}", e);
         return; },
