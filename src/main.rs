@@ -4,6 +4,7 @@ use std::io::{self, BufRead, Write,BufReader};
 use std::path::Path;
 use std::fs::File;
 use std::fs::rename;
+use std::vec;
 
 //Por ahora leo el archivo, saco el header y atajo el error asi
 fn leer_header(archivo: &String) ->  io::Result<Vec<String>>{
@@ -318,6 +319,61 @@ fn eliminar_datos(consulta_sql: String, ruta_del_archivo: String){
 }
 
 
+fn separar_datos_select(consulta_sql: String)-> Result<(String,String ,Vec<String>),&'static str>{
+    
+    match consulta_sql.split("WHERE").collect::<Vec<&str>>(){
+
+        
+        vec if vec[0].contains("FROM") => {
+
+        let nombre_csv_y_columnas = vec[0].replace("SELECT", "").trim().to_string();
+        let nombre_csv_y_columnas:Vec<&str> = nombre_csv_y_columnas.split("FROM").collect();
+
+        let nombre_csv = nombre_csv_y_columnas[1].trim().to_string();
+        let columnas = nombre_csv_y_columnas[0].trim().to_string();
+
+       
+
+        let clave = vec[1].replace(";","").trim().to_string();
+        let clave:Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
+
+        println!("{}", nombre_csv);
+        println!("{}", columnas);
+        println!("{:?}",clave);
+    
+
+        Ok((nombre_csv,columnas,clave))}
+
+    _ => Err("Error al leer los datos de la consulta")
+    ,
+    }
+
+    
+
+}
+
+fn procesar_condiciones(clave:Vec<String>){
+
+}
+
+
+
+fn consultar_datos(consulta_sql: String, ruta:String){
+
+    let (nombre_csv,columnas,clave) =  match separar_datos_select(consulta_sql) {
+        Ok((nombre_csv,columnas,clave)) => {(nombre_csv,columnas,clave)}
+
+        Err(e) => {println!("Error: {}", e);
+        return; },
+        
+    };
+
+
+
+
+
+}
+
 
 fn realizar_consulta(consulta_sql:String ,ruta: String) {
     
@@ -335,6 +391,10 @@ fn realizar_consulta(consulta_sql:String ,ruta: String) {
     else if obtener_primera_palabra(&consulta_sql) == "DELETE"{
         eliminar_datos(consulta_sql,ruta);
         
+    }
+
+    else if obtener_primera_palabra(&consulta_sql) == "SELECT"{
+        consultar_datos(consulta_sql,ruta);
     }
 
 
