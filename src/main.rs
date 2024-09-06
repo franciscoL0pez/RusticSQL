@@ -1,10 +1,10 @@
-use std::alloc::LayoutError;
 //La compilación no debe arrojar warnings del compilador, ni del linter clippy.
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, Write,BufReader};
 use std::path::Path;
 use std::fs::File;
 use std::fs::rename;
+use std::sync::PoisonError;
 
 //Por ahora leo el archivo, saco el header y atajo el error asi
 fn leer_header(archivo: &String) ->  io::Result<Vec<String>>{
@@ -337,9 +337,7 @@ fn separar_datos_select(consulta_sql: String)-> Result<(String,String ,Vec<Strin
         let condiciones = vec[1].replace(";","").trim().to_string();
         let condiciones:Vec<String> = condiciones.split_whitespace().map(|s| s.to_string()).collect();
 
-        println!("{}", columnas);
-        println!("{}", nombre_csv);
-        println!("{:?}", condiciones);
+       
 
         Ok((nombre_csv,columnas,condiciones))}
 
@@ -352,6 +350,7 @@ fn separar_datos_select(consulta_sql: String)-> Result<(String,String ,Vec<Strin
 }
 
 
+#[derive(Debug)]
 enum Operador {
     Igual,
     Mayor,
@@ -361,6 +360,8 @@ enum Operador {
     Or
 }
 
+
+#[derive(Debug)]
 struct Condicion {
     columna: String ,
     operador: Operador,
@@ -392,7 +393,7 @@ fn procesar_condiciones(condiciones:Vec<String>) -> Vec<Condicion>{
         if let (Some(op), Some(val)) = (obtener_op(&condiciones[i + 1]), condiciones.get(i + 2)) {
 
             let c = &condiciones[i];
-            
+
             let condicion = Condicion{
                 columna:c.to_string(),
                 operador:op,
@@ -409,8 +410,91 @@ fn procesar_condiciones(condiciones:Vec<String>) -> Vec<Condicion>{
     condiciones_parseadas 
 }
 
+fn obtener_posicion_header(clave:&str, header:&Vec<String>) -> Result<usize,String>{
 
-fn consultar_datos(consulta_sql: String, ruta:String){
+    let pos = header.iter().position(|s| *s == clave.to_string());
+    
+    let i = match pos {
+
+        Some(i) => return Ok(i),
+
+        None => {
+            return Err( "Error no existe esa clave!".to_string());
+        },
+        
+    }; 
+   
+}
+
+
+fn comparar_condiciones(condicion:&Condicion,fila: &Vec<String>,pos:usize) -> bool{
+
+    if let Some(valor_f) = fila.get(pos) {
+
+        match condicion.operador{
+
+            Operador::Igual => valor_f == &condicion.valor,
+            Operador::Mayor => valor_f.parse::<i32>().ok() > condicion.valor.parse::<i32>().ok(),
+            Operador::Menor => valor_f.parse::<i32>().ok() < condicion.valor.parse::<i32>().ok(),
+
+            _ => false
+
+        }
+
+    }
+    else {
+        false
+    }
+}
+
+
+
+
+fn comparar_con_csv(condiciones_parseadas:Vec<Condicion>, ruta_csv: String,header:Vec<String>) ->Result<Vec<Vec<String>>, io::Error>{
+    let archivo = File::open(&ruta_csv)?;
+    let lector = BufReader::new(archivo);
+    let mut matriz: Vec<Vec<String>> = Vec::new();
+
+    for linea in lector.lines(){
+
+        let fila: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
+        let mut cumple_condiciones = true;
+
+        for condicion in &condiciones_parseadas {         
+
+            let pos = match obtener_posicion_header(&condicion.columna, &header) {
+                Ok(p) => p,
+                Err(e) => {
+                    eprintln!("{} Error: No se encontro las columnas ", e); // Error de encabezado
+                    break;
+                }
+            };
+
+            if !comparar_condiciones(&condicion, &fila, pos){
+                //Si no cumple 1 lo saco ya que no lo voy a agregar (mirar como hacer con OR y NOT)
+                cumple_condiciones = false;
+                break;
+            }
+
+        }
+
+        if cumple_condiciones {
+            matriz.push(fila);
+        }
+    }
+    matriz.insert(0,header);
+
+    Ok(matriz)
+    
+}
+
+
+fn mostrar_select(matriz:Vec<Vec<String>>, columnas_selec:String){
+    let columnas_selec: Vec<String> = columnas_selec.split(',').map(|s| s.trim().to_string()).collect();
+}
+
+
+fn Select(consulta_sql: String, ruta_del_archivo:String){
 
     let (nombre_csv,columnas,condiciones) =  match separar_datos_select(consulta_sql) {
         Ok((nombre_csv,columnas,condiciones)) => {(nombre_csv,columnas,condiciones)}
@@ -419,6 +503,21 @@ fn consultar_datos(consulta_sql: String, ruta:String){
         return; },
         
     };
+
+    let condiciones_parseadas = procesar_condiciones(condiciones);
+
+    let ruta_csv = obtener_ruta_del_csv(ruta_del_archivo,&nombre_csv);
+
+    let header = match leer_header(&ruta_csv) {
+        Ok(header) => {header}
+
+        Err(e) => {println!("Error: {}", e);
+        return;}, 
+    };
+
+
+    let matriz = comparar_con_csv(condiciones_parseadas, ruta_csv, header);
+    
 
 
 
@@ -446,7 +545,7 @@ fn realizar_consulta(consulta_sql:String ,ruta: String) {
     }
 
     else if obtener_primera_palabra(&consulta_sql) == "SELECT"{
-        consultar_datos(consulta_sql,ruta);
+        Select(consulta_sql,ruta);
     }
 
 
