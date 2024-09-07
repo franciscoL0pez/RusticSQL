@@ -1,10 +1,8 @@
 id,id_cliente,producto,cantidad
-103,1,Monitor,1
-102,2,Teléfono,2
+103,1,teclado,1
+102,2,Teclado,2
 104,3,Teclado,4
 122,99,Teclado,5
 105,4,Mouse,2
 106,5,Impresora,1
 107,6,Altavoces,1
-108,4,Auriculares,4
-108,4,Auriculares,300

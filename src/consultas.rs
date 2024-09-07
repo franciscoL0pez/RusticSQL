@@ -1,4 +1,3 @@
-
 use crate::manejo_de_string;
 use crate::manejo_de_csv;
 use crate::condiciones;
@@ -25,7 +24,7 @@ pub fn update(consulta_sql: String, ruta_del_archivo: String){
     let (nombre_del_csv,campos_para_actualizar, donde_actualizar) =  match manejo_de_string::separar_datos_update(consulta_sql) {
         Ok((nombre_del_csv,campos_para_actualizar,donde_actualizar)) => {(nombre_del_csv,campos_para_actualizar, donde_actualizar)}
 
-        Err(e) => {println!("Error: {}", e);
+        Err(e) => {println!("{}", e);
         return; },
         
     };
@@ -35,7 +34,7 @@ pub fn update(consulta_sql: String, ruta_del_archivo: String){
     let header = match manejo_de_csv::leer_header(&ruta_csv) {
         Ok(header) => {header}
 
-        Err(e) => {println!("Error: {}", e);
+        Err(e) => {println!("{}", e);
         return;}, 
     };
     
@@ -52,20 +51,21 @@ pub fn delete(consulta_sql: String, ruta_del_archivo: String){
     let (nombre_del_csv,clave) =  match manejo_de_string::separar_datos_delete(consulta_sql) {
         Ok((nombre_del_csv,clave)) => {(nombre_del_csv,clave)}
 
-        Err(e) => {println!("Error: {}", e);
+        Err(e) => {println!("{}", e);
         return; },
         
     };
 
     
     let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo,&nombre_del_csv);
+    
     let header = match manejo_de_csv::leer_header(&ruta_csv) {
         Ok(header) => {header}
 
-        Err(e) => {println!("Error: {}", e);
+        Err(e) => {println!("{}", e);
         return;}, 
     };
-
+   
 
     let _ = manejo_de_csv::borrar_lineas_csv(ruta_csv, header, clave);
 
@@ -80,7 +80,7 @@ fn ordenar_matriz(matriz:Vec<Vec<String>>, ordenamiento:Vec<String>,header:&Vec<
         Ok(pos) => {pos}
 
         Err(e) => {
-            return Err(format!("Error: {}", e));
+            return Err(format!("{}", e));
         }
     };
 
@@ -115,7 +115,7 @@ fn mostrar_select(matriz:Vec<Vec<String>>, columnas_selec:String,header:&Vec<Str
 
             Ok(pos) => {posiciones.push(pos)}
     
-            Err(e) => {println!("Error: {}", e);
+            Err(e) => {println!("{}", e);
             return;}, 
         };
     }
@@ -123,7 +123,7 @@ fn mostrar_select(matriz:Vec<Vec<String>>, columnas_selec:String,header:&Vec<Str
     let matriz = match ordenar_matriz(matriz, ordenamiento, header){
         Ok(matriz) => {matriz}
 
-        Err(e) => {println!("Error: {}", e);
+        Err(e) => {println!("{}", e);
         return;},
 
     };
@@ -146,7 +146,7 @@ pub fn select(consulta_sql: String, ruta_del_archivo:String){
     let (nombre_csv,columnas,condiciones) =  match manejo_de_string::separar_datos_select(consulta_sql) {
         Ok((nombre_csv,columnas,condiciones)) => {(nombre_csv,columnas,condiciones)}
 
-        Err(e) => {println!("Error: {}", e);
+        Err(e) => {println!("{}", e);
         return; },
         
     };
@@ -158,7 +158,7 @@ pub fn select(consulta_sql: String, ruta_del_archivo:String){
     let header = match manejo_de_csv::leer_header(&ruta_csv) {
         Ok(header) => {header}
 
-        Err(e) => {println!("Error: {}", e);
+        Err(e) => {println!("{}", e);
         return;}, 
     };
 
@@ -166,7 +166,7 @@ pub fn select(consulta_sql: String, ruta_del_archivo:String){
        
         Ok(matriz) => {matriz}
     
-        Err(e) => {println!("Error: {}", e);
+        Err(e) => {println!("{}", e);
         return;}, 
     };
 

@@ -23,7 +23,7 @@ pub fn leer_header(archivo: &String) ->  io::Result<Vec<String>>{
         Ok(header) // Devuelve el vector de 
       
         } else {
-            Err(io::Error::new(io::ErrorKind::NotFound, "Error al leer el archivo"))
+            Err(io::Error::new(io::ErrorKind::NotFound, "CSV_Error:Error al leer el csv"))
         }
 
    
@@ -71,8 +71,8 @@ fn actualizar_csv(ruta_csv:String,header:Vec<String>,campos:Vec<String>,clave:Ve
         Some(i) => i,
 
         None => {
-            println!("Error no existe esa clave!");
-            return Err(io::Error::new(io::ErrorKind::NotFound, "Error no existe esa clave!"));
+          
+            return Err(io::Error::new(io::ErrorKind::NotFound, "INVALID_COLUMN: Error al buscar las columnas en la consulta"));
         },
         
     }; 
@@ -103,6 +103,7 @@ fn actualizar_csv(ruta_csv:String,header:Vec<String>,campos:Vec<String>,clave:Ve
                 
             }
     }
+    
     let _ = rename(archivo_temporal,ruta_csv);
 
     Ok(())
@@ -114,7 +115,7 @@ pub fn borrar_lineas_csv(ruta_csv:String,header:Vec<String>,clave:Vec<String>)->
     let lector = BufReader::new(archivo);
     let archivo_temporal = "auxiliar.csv";
     let mut archivo_tem = File::create(archivo_temporal)?;
-
+    
     let pos = header.iter().position(|s| *s == clave[0].to_string());
     
     let indice = match pos {
@@ -122,12 +123,11 @@ pub fn borrar_lineas_csv(ruta_csv:String,header:Vec<String>,clave:Vec<String>)->
         Some(i) => i,
 
         None => {
-            println!("Error no existe esa clave!");
-            return Err(io::Error::new(io::ErrorKind::NotFound, "Error no existe esa clave!"));
+            return Err(io::Error::new(io::ErrorKind::NotFound, "INVALID_COLUMN: Error al buscar las columnas en la consulta"));
         },
         
     }; 
-
+    
 
     for linea in lector.lines(){
         let  linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()) .collect();
@@ -141,6 +141,7 @@ pub fn borrar_lineas_csv(ruta_csv:String,header:Vec<String>,clave:Vec<String>)->
 
       
     }   
+    
 
     let _ = rename(archivo_temporal,ruta_csv);
     Ok(())
@@ -156,7 +157,7 @@ pub fn obtener_posicion_header(clave:&str, header:&Vec<String>) -> Result<usize,
         Some(i) => return Ok(i),
 
         None => {
-            return Err( "Error no existe esa columna!".to_string());
+            return Err( "INVALID_COLUMN: La columna ingresada no se encuntra en el csv".to_string());
         },
         
     }; 

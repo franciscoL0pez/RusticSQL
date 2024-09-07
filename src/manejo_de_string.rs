@@ -51,7 +51,7 @@ pub fn separar_datos_update(consulta_sql:String) -> Result<(String, Vec<String>,
         
            
             Ok((nombre_del_csv,campos, clave))}
-        None => Err("Error ")
+        None => Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
     }
     
 }
@@ -62,7 +62,7 @@ pub fn separar_datos_delete(consulta_sql:String) -> Result<(String, Vec<String>)
         
         vec if vec.len() > 1 => {
 
-            let nombre_del_csv = vec[0].replace("DELETE","").trim().to_string();
+            let nombre_del_csv = vec[0].replace("DELETE","").replace("FROM", "").trim().to_string();
            
         
             let clave = vec[1].replace("=", "").replace(",","" ).trim_end_matches(";").to_string();
@@ -71,7 +71,7 @@ pub fn separar_datos_delete(consulta_sql:String) -> Result<(String, Vec<String>)
            
             Ok((nombre_del_csv,clave))}
 
-        _ => Err("Error al leer los datos de la consulta"),
+        _ => Err("INVALID_SYNTAX: Error de sintaxis en la consulta "),
     }
 
     
@@ -98,7 +98,7 @@ pub fn separar_datos_select(consulta_sql: String)-> Result<(String,String ,Vec<S
 
         Ok((nombre_csv,columnas,condiciones))}
 
-    _ => Err("Error: La consulta no existe")
+    _ => Err("INVALID_SYNTAX: Error de sintaxis en la consulta")
     ,
     }
 }
