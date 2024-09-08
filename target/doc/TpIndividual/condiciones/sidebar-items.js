@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["OpLogico","Operador"],"fn":["comparar_con_csv","comparar_op","comparar_op_logico","obtener_op","obtener_op_logico","procesar_condiciones"],"struct":["Condicion"]};

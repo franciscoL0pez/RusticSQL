@@ -63,19 +63,12 @@ fn actualizar_csv(ruta_csv:String,header:Vec<String>,campos:Vec<String>,clave:Ve
     let archivo_temporal = "auxiliar.csv";
     let mut archivo_tem = File::create(archivo_temporal)?;
 
-
-    let pos = header.iter().position(|s| *s == clave[0].to_string());
+    let indice = obtener_posicion_header(&clave[0], &header)
+        .map_err(|e| {
+            eprintln!("{}", e);
+            io::Error::new(io::ErrorKind::InvalidInput, e)
+        })?;
     
-    let indice = match pos {
-
-        Some(i) => i,
-
-        None => {
-          
-            return Err(io::Error::new(io::ErrorKind::NotFound, "INVALID_COLUMN: Error al buscar las columnas en la consulta"));
-        },
-        
-    }; 
 
     //Quiero encontrar la clave en alguna linea y si la encuentro la reemplazo por los valores que me dieron
     for linea in lector.lines(){
@@ -116,17 +109,11 @@ pub fn borrar_lineas_csv(ruta_csv:String,header:Vec<String>,clave:Vec<String>)->
     let archivo_temporal = "auxiliar.csv";
     let mut archivo_tem = File::create(archivo_temporal)?;
     
-    let pos = header.iter().position(|s| *s == clave[0].to_string());
-    
-    let indice = match pos {
-
-        Some(i) => i,
-
-        None => {
-            return Err(io::Error::new(io::ErrorKind::NotFound, "INVALID_COLUMN: Error al buscar las columnas en la consulta"));
-        },
-        
-    }; 
+    let indice = obtener_posicion_header(&clave[0], &header)
+        .map_err(|e| {
+            eprintln!("{}", e);
+            io::Error::new(io::ErrorKind::InvalidInput, e)
+        })?;
     
 
     for linea in lector.lines(){
@@ -139,27 +126,22 @@ pub fn borrar_lineas_csv(ruta_csv:String,header:Vec<String>,clave:Vec<String>)->
             writeln!(archivo_tem,"{}",nueva_linea)?;
         }         
 
-      
     }   
-    
 
     let _ = rename(archivo_temporal,ruta_csv);
     Ok(())
     
 }
 
-pub fn obtener_posicion_header(clave:&str, header:&Vec<String>) -> Result<usize,String>{
+pub fn obtener_posicion_header(clave:&str, header:&[String]) -> Result<usize,String>{
 
-    let pos = header.iter().position(|s| *s == clave.to_string());
+    let pos = header.iter().position(|s| s == clave);
     
-    let _i = match pos {
+    match pos {
 
-        Some(i) => return Ok(i),
-
-        None => {
-            return Err( "INVALID_COLUMN: La columna ingresada no se encuntra en el csv".to_string());
-        },
+        Some(i) => Ok(i),
+        None => Err( "INVALID_COLUMN: La columna ingresada no se encuntra en el csv".to_string()),
         
-    }; 
+    }
    
 }

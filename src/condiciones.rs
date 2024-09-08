@@ -15,9 +15,9 @@ pub enum Operador {
 
 #[derive(Debug)]
 pub enum OpLogico{
-    AND,
-    OR,
-    NOT
+    And,
+    Or,
+    Not
 }
 
 
@@ -34,11 +34,11 @@ pub fn obtener_op_logico(op:&str) -> Option<OpLogico>{
 
     match op {
 
-        "AND" => Some(OpLogico::AND),
-        "OR" => Some(OpLogico::OR),
-        "NOT" => Some(OpLogico::NOT),
+        "AND" => Some(OpLogico::And),
+        "OR" => Some(OpLogico::Or),
+        "NOT" => Some(OpLogico::Not),
 
-        _ => Some(OpLogico::AND)
+        _ => Some(OpLogico::And)
     }
 
 }
@@ -66,33 +66,50 @@ pub fn obtener_op(op: &str) -> Option<Operador> {
 pub fn procesar_condiciones(condiciones:Vec<String>) -> Vec<Condicion>{
   
     let mut condiciones_parseadas: Vec<Condicion> = Vec::new(); 
-    println!("{:?}", condiciones);
-    for i in (0..condiciones.len()).step_by(4){
+    let mut i = 0;
+
+    while condiciones.len() > i {
+        let mut op_logico = OpLogico::And;
+
+        let columna = condiciones[i].to_string();
+        let operador = match obtener_op(&condiciones[i+1]){
+
+            Some(operador) => operador,
+            None => {
+                eprintln!("Operador inválido en la condición: {}", condiciones[i + 1]);
+                break;
+            }
+        };
+        let valor = condiciones[i+2].to_string();
         
-        if let (Some(op_logico) ,Some(op), Some(val)) = (obtener_op_logico(&condiciones[i]),obtener_op(&condiciones[i + 1]), condiciones.get(i + 2)) {
+        
+         if i > 1 && condiciones.len() > i {
+            
 
-            let col: &String = &condiciones[i];
-            
-            
-            let condicion = Condicion{
-                columna:col.to_string(),
-                operador:op,
-                valor: val.to_string(),
-                op_logico:op_logico
-
-            };
-            
-            condiciones_parseadas.push(condicion);
+            if let Some(op)  = obtener_op_logico(&condiciones[i-1]){
+                op_logico = op;
+            }
         }
-        
-    };
+         
+         i+=4;
+         
 
-    
+        
+        let condicion = Condicion {
+            columna,
+            operador,
+            valor,
+            op_logico
+
+        };
+        
+        condiciones_parseadas.push(condicion);
+    }
     condiciones_parseadas 
 }
 
 
-pub fn comparar_op(condicion:&Condicion,fila: &Vec<String>,pos:usize) -> Result<bool,String>{
+pub fn comparar_op(condicion:&Condicion,fila: &[String],pos:usize) -> Result<bool,String>{
 
     if let Some(valor_f) = fila.get(pos) {
 
@@ -104,24 +121,21 @@ pub fn comparar_op(condicion:&Condicion,fila: &Vec<String>,pos:usize) -> Result<
             Operador::Distinto => Ok(valor_f != &condicion.valor),
             Operador::MayorIgual => Ok(valor_f.parse::<i32>().ok() >= condicion.valor.parse::<i32>().ok()),
             Operador::MenorIgual => Ok(valor_f.parse::<i32>().ok() <= condicion.valor.parse::<i32>().ok()),
-
-            
-
         }
 
     }
     else {
-        Err( "INVALID_COLUMN: La columna ingresada no se encuntra en el csv".to_string())
+        Err( "INVALID_SYNTAX: El operador ingresado no existe".to_string())
     }
 }
 
 
-pub fn comparar_op_logico(condiciones_parseadas:&Vec<Condicion>,fila: &Vec<String> ,header:&Vec<String>) -> Result <bool,String> {
+pub fn comparar_op_logico(condiciones_parseadas:&[Condicion],fila: &[String] ,header:&[String]) -> Result <bool,String> {
     let mut resultado = true;
     
     for condicion in condiciones_parseadas.iter() {
        
-       let pos = match manejo_de_csv::obtener_posicion_header(&condicion.columna, &header) {
+       let pos = match manejo_de_csv::obtener_posicion_header(&condicion.columna,header) {
             Ok(p) => p,
             Err(e) => {
                 eprintln!("{}", e); // Error al leer el header
@@ -134,14 +148,14 @@ pub fn comparar_op_logico(condiciones_parseadas:&Vec<Condicion>,fila: &Vec<Strin
                 Ok(segundo_resultado) => {segundo_resultado}
 
                 Err(e) => {
-                    return Err(format!("{}", e));
+                    return Err(e.to_string());
                 }
         };
 
         match condicion.op_logico {
-            OpLogico::AND => resultado = resultado && segundo_resultado,
-            OpLogico::OR => resultado = resultado || segundo_resultado,
-            OpLogico::NOT => resultado = resultado && !segundo_resultado,
+            OpLogico::And => resultado = resultado && segundo_resultado,
+            OpLogico::Or => resultado = resultado || segundo_resultado,
+            OpLogico::Not => resultado = resultado && !segundo_resultado,
         }
     }
 

@@ -71,16 +71,16 @@ pub fn delete(consulta_sql: String, ruta_del_archivo: String){
 
 }
 
-fn ordenar_matriz(matriz:Vec<Vec<String>>, ordenamiento:Vec<String>,header:&Vec<String>) -> Result <Vec<Vec<String>>,String> {
+fn ordenar_matriz(matriz:Vec<Vec<String>>, ordenamiento:Vec<String>,header:&[String]) -> Result <Vec<Vec<String>>,String> {
 
     let mut matriz = matriz;
     let fila_1 = matriz.remove(0);
 
-    let pos = match manejo_de_csv::obtener_posicion_header(&ordenamiento[1].to_lowercase(), &header) {
+    let pos = match manejo_de_csv::obtener_posicion_header(&ordenamiento[1].to_lowercase(), header) {
         Ok(pos) => {pos}
 
         Err(e) => {
-            return Err(format!("{}", e));
+            return Err(e.to_string());
         }
     };
 
@@ -104,14 +104,14 @@ fn ordenar_matriz(matriz:Vec<Vec<String>>, ordenamiento:Vec<String>,header:&Vec<
     
 }
 
-fn mostrar_select(matriz:Vec<Vec<String>>, columnas_selec:String,header:&Vec<String>,ordenamiento:Vec<String>){
+fn mostrar_select(matriz:Vec<Vec<String>>, columnas_selec:String,header:&[String],ordenamiento:Vec<String>){
 
     let columnas_selec: Vec<String> = columnas_selec.split(',').map(|s| s.trim().to_string()).collect();
     let mut posiciones: Vec<usize> = Vec::new();
 
     for valor in &columnas_selec{
 
-        let _pos = match manejo_de_csv::obtener_posicion_header(&valor, &header) {
+        match manejo_de_csv::obtener_posicion_header(valor, header) {
 
             Ok(pos) => {posiciones.push(pos)}
     

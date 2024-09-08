@@ -119,7 +119,7 @@ pub fn separar_order(condiciones:Vec<String>) -> (Vec<String>,Vec<String>){
 
        let condiciones:Vec<String> = condiciones.split_whitespace().map(|s| s.to_string()).collect();
 
-       return (condiciones,ordenamiento)
+       (condiciones,ordenamiento)
 
 
     }
@@ -127,7 +127,7 @@ pub fn separar_order(condiciones:Vec<String>) -> (Vec<String>,Vec<String>){
     else {
         let condiciones:Vec<String> = condiciones.split_whitespace().map(|s| s.to_string()).collect();
         
-        return  (condiciones, ordenamiento);
+        (condiciones, ordenamiento)
     }
     
 }

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["delete","insert","mostrar_select","ordenar_matriz","select","update"]};
