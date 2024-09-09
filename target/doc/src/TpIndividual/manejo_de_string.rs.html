@@ -150,156 +150,216 @@
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
 </pre></div><pre class="rust"><code><span class="kw">pub fn </span>obtener_primera_palabra(cadena: <span class="kw-2">&amp;</span>str) -&gt; String {
-
     <span class="kw">let </span><span class="kw-2">mut </span>iterar_en_cadena = cadena.split_whitespace();
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(palabra) = iterar_en_cadena.next() {
-
         palabra.to_string()
-
-    }     
-    <span class="kw">else </span>{
-        String::new() 
+    } <span class="kw">else </span>{
+        String::new()
     }
 }
 
-
-<span class="kw">pub fn </span>separar_datos(consulta_sql:String) -&gt; (String, String){
-
+<span class="kw">pub fn </span>separar_datos(consulta_sql: String) -&gt; (String, String) {
     <span class="comment">//Ojo que si no esta values no funciona
     </span><span class="kw">let </span>partes: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = consulta_sql.split(<span class="string">"VALUES"</span>).collect();
 
     <span class="kw">let </span>insert = partes[<span class="number">0</span>].trim().to_string();
     <span class="kw">let </span>valores = partes[<span class="number">1</span>].trim_end_matches(<span class="string">';'</span>).trim().to_string();
- 
 
     <span class="kw">let </span><span class="kw-2">mut </span>palabras: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = insert.split_whitespace().collect();
-
 
     palabras.drain(<span class="number">0</span>..<span class="number">2</span>); <span class="comment">// Quito el insert y el into
 
     </span><span class="kw">let </span>direccion_y_columnas = palabras.join(<span class="string">" "</span>);
 
     (direccion_y_columnas, valores)
-
 }
 
-<span class="kw">pub fn </span>separar_datos_update(consulta_sql:String) -&gt; <span class="prelude-ty">Result</span>&lt;(String, Vec&lt;String&gt;,Vec&lt;String&gt;),<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;{
-
+<span class="kw">pub fn </span>separar_datos_update(
+    consulta_sql: String,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(String, Vec&lt;String&gt;, Vec&lt;String&gt;), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">let </span>partes: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = consulta_sql.split(<span class="string">"SET"</span>).collect();
-    <span class="kw">let </span>nombre_del_csv = partes[<span class="number">0</span>].trim().replace(<span class="string">"UPDATE"</span>,<span class="string">""</span>).replace(<span class="string">" "</span>, <span class="string">""</span>);
+    <span class="kw">let </span>nombre_del_csv = partes[<span class="number">0</span>].trim().replace(<span class="string">"UPDATE"</span>, <span class="string">""</span>).replace(<span class="string">" "</span>, <span class="string">""</span>);
     <span class="kw">let </span>valores = partes[<span class="number">1</span>].trim().trim_end_matches(<span class="string">';'</span>);
-    
-    <span class="kw">match </span>valores.split_once(<span class="string">"WHERE"</span>){
-        
-        <span class="prelude-val">Some</span>((campos,clave)) =&gt; {
 
-            <span class="kw">let </span>campos = campos.replace(<span class="string">"="</span>, <span class="string">""</span>).replace(<span class="string">","</span>,<span class="string">"" </span>);
-            <span class="kw">let </span>campos:Vec&lt;String&gt; = campos.split_whitespace().map(|s| s.to_string()).collect();
-        
-            <span class="kw">let </span>clave = clave.replace(<span class="string">"="</span>, <span class="string">""</span>).replace(<span class="string">","</span>,<span class="string">"" </span>);
-            <span class="kw">let </span>clave:Vec&lt;String&gt; = clave.split_whitespace().map(|s| s.to_string()).collect();
-        
-           
-            <span class="prelude-val">Ok</span>((nombre_del_csv,campos, clave))}
-        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(<span class="string">"INVALID_SYNTAX: Error de sintaxis en la consulta "</span>)
+    <span class="kw">match </span>valores.split_once(<span class="string">"WHERE"</span>) {
+        <span class="prelude-val">Some</span>((campos, clave)) =&gt; {
+            <span class="kw">let </span>campos = campos.replace(<span class="string">"="</span>, <span class="string">""</span>).replace(<span class="string">","</span>, <span class="string">""</span>);
+            <span class="kw">let </span>campos: Vec&lt;String&gt; = campos.split_whitespace().map(|s| s.to_string()).collect();
+
+            <span class="kw">let </span>clave = clave.replace(<span class="string">"="</span>, <span class="string">""</span>).replace(<span class="string">","</span>, <span class="string">""</span>);
+            <span class="kw">let </span>clave: Vec&lt;String&gt; = clave.split_whitespace().map(|s| s.to_string()).collect();
+
+            <span class="prelude-val">Ok</span>((nombre_del_csv, campos, clave))
+        }
+        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(<span class="string">"INVALID_SYNTAX: Error de sintaxis en la consulta "</span>),
     }
-    
 }
 
-<span class="kw">pub fn </span>separar_datos_delete(consulta_sql:String) -&gt; <span class="prelude-ty">Result</span>&lt;(String, Vec&lt;String&gt;),<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;{
-
-    <span class="kw">match </span>consulta_sql.split(<span class="string">"WHERE"</span>).collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;&gt;(){
-        
+<span class="kw">pub fn </span>separar_datos_delete(consulta_sql: String) -&gt; <span class="prelude-ty">Result</span>&lt;(String, Vec&lt;String&gt;), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    <span class="kw">match </span>consulta_sql.split(<span class="string">"WHERE"</span>).collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;&gt;() {
         vec <span class="kw">if </span>vec.len() &gt; <span class="number">1 </span>=&gt; {
+            <span class="kw">let </span>nombre_del_csv = vec[<span class="number">0</span>]
+                .replace(<span class="string">"DELETE"</span>, <span class="string">""</span>)
+                .replace(<span class="string">"FROM"</span>, <span class="string">""</span>)
+                .trim()
+                .to_string();
 
-            <span class="kw">let </span>nombre_del_csv = vec[<span class="number">0</span>].replace(<span class="string">"DELETE"</span>,<span class="string">""</span>).replace(<span class="string">"FROM"</span>, <span class="string">""</span>).trim().to_string();
-           
-        
-            <span class="kw">let </span>clave = vec[<span class="number">1</span>].replace(<span class="string">"="</span>, <span class="string">""</span>).replace(<span class="string">","</span>,<span class="string">"" </span>).trim_end_matches(<span class="string">";"</span>).to_string();
-            <span class="kw">let </span>clave:Vec&lt;String&gt; = clave.split_whitespace().map(|s| s.to_string()).collect();
-        
-           
-            <span class="prelude-val">Ok</span>((nombre_del_csv,clave))}
+            <span class="kw">let </span>clave = vec[<span class="number">1</span>]
+                .replace(<span class="string">"="</span>, <span class="string">""</span>)
+                .replace(<span class="string">","</span>, <span class="string">""</span>)
+                .trim_end_matches(<span class="string">";"</span>)
+                .to_string();
+            <span class="kw">let </span>clave: Vec&lt;String&gt; = clave.split_whitespace().map(|s| s.to_string()).collect();
+
+            <span class="prelude-val">Ok</span>((nombre_del_csv, clave))
+        }
 
         <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(<span class="string">"INVALID_SYNTAX: Error de sintaxis en la consulta "</span>),
     }
-
-    
 }
 
-
-<span class="kw">pub fn </span>separar_datos_select(consulta_sql: String)-&gt; <span class="prelude-ty">Result</span>&lt;(String,String ,Vec&lt;String&gt;),<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;{
-    
-    <span class="kw">match </span>consulta_sql.split(<span class="string">"WHERE"</span>).collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;&gt;(){
+<span class="kw">pub fn </span>separar_datos_select(
+    consulta_sql: String,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(String, String, Vec&lt;String&gt;), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    <span class="kw">match </span>consulta_sql.split(<span class="string">"WHERE"</span>).collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;&gt;() {
         vec <span class="kw">if </span>vec[<span class="number">0</span>].contains(<span class="string">"FROM"</span>) =&gt; {
-        
-        <span class="kw">let </span>nombre_csv_y_columnas = vec[<span class="number">0</span>].replace(<span class="string">"SELECT"</span>, <span class="string">""</span>).trim().to_string();
-        <span class="kw">let </span>nombre_csv_y_columnas:Vec&lt;<span class="kw-2">&amp;</span>str&gt; = nombre_csv_y_columnas.split(<span class="string">"FROM"</span>).collect();
+            <span class="kw">let </span>nombre_csv_y_columnas = vec[<span class="number">0</span>].replace(<span class="string">"SELECT"</span>, <span class="string">""</span>).trim().to_string();
+            <span class="kw">let </span>nombre_csv_y_columnas: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = nombre_csv_y_columnas.split(<span class="string">"FROM"</span>).collect();
 
-        <span class="kw">let </span>nombre_csv = nombre_csv_y_columnas[<span class="number">1</span>].trim().to_string();
-        <span class="kw">let </span>columnas = nombre_csv_y_columnas[<span class="number">0</span>].trim().to_string();
+            <span class="kw">let </span>nombre_csv = nombre_csv_y_columnas[<span class="number">1</span>].trim().to_string();
+            <span class="kw">let </span>columnas = nombre_csv_y_columnas[<span class="number">0</span>].trim().to_string();
 
-        
+            <span class="kw">let </span>condiciones = vec[<span class="number">1</span>].replace(<span class="string">";"</span>, <span class="string">""</span>).trim().to_string();
+            <span class="kw">let </span>condiciones: Vec&lt;String&gt; = condiciones
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect();
 
-        <span class="kw">let </span>condiciones = vec[<span class="number">1</span>].replace(<span class="string">";"</span>,<span class="string">""</span>).trim().to_string();
-        <span class="kw">let </span>condiciones:Vec&lt;String&gt; = condiciones.split_whitespace().map(|s| s.to_string()).collect();
+            <span class="prelude-val">Ok</span>((nombre_csv, columnas, condiciones))
+        }
 
-       
-
-        <span class="prelude-val">Ok</span>((nombre_csv,columnas,condiciones))}
-
-    <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(<span class="string">"INVALID_SYNTAX: Error de sintaxis en la consulta"</span>)
-    ,
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(<span class="string">"INVALID_SYNTAX: Error de sintaxis en la consulta"</span>),
     }
 }
 
-<span class="kw">pub fn </span>separar_order(condiciones:Vec&lt;String&gt;) -&gt; (Vec&lt;String&gt;,Vec&lt;String&gt;){
-    <span class="kw">let </span>ordenamiento:Vec&lt;String&gt; = Vec::new();
+<span class="kw">pub fn </span>separar_order(condiciones: Vec&lt;String&gt;) -&gt; (Vec&lt;String&gt;, Vec&lt;String&gt;) {
+    <span class="kw">let </span>ordenamiento: Vec&lt;String&gt; = Vec::new();
     <span class="kw">let </span>condiciones = condiciones.join(<span class="string">" "</span>);
 
-    
     <span class="kw">if </span>condiciones.contains(<span class="string">"ORDER"</span>) {
+        <span class="kw">let </span>condiciones = condiciones.split(<span class="string">"ORDER"</span>).collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;&gt;();
 
-       <span class="kw">let </span>condiciones = condiciones.split(<span class="string">"ORDER"</span>).collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;&gt;();
-       
-       <span class="kw">let </span>ordenamiento = condiciones[<span class="number">1</span>].split_whitespace().map(|s| s.to_string()).collect();
-      
+        <span class="kw">let </span>ordenamiento = condiciones[<span class="number">1</span>]
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
 
-       <span class="kw">let </span>condiciones = condiciones[<span class="number">0</span>];
+        <span class="kw">let </span>condiciones = condiciones[<span class="number">0</span>];
 
-       <span class="kw">let </span>condiciones:Vec&lt;String&gt; = condiciones.split_whitespace().map(|s| s.to_string()).collect();
+        <span class="kw">let </span>condiciones: Vec&lt;String&gt; = condiciones
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
 
-       <span class="kw">return </span>(condiciones,ordenamiento)
+        (condiciones, ordenamiento)
+    } <span class="kw">else </span>{
+        <span class="kw">let </span>condiciones: Vec&lt;String&gt; = condiciones
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
 
-
+        (condiciones, ordenamiento)
     }
-
-    <span class="kw">else </span>{
-        <span class="kw">let </span>condiciones:Vec&lt;String&gt; = condiciones.split_whitespace().map(|s| s.to_string()).collect();
-        
-        <span class="kw">return  </span>(condiciones, ordenamiento);
-    }
-    
 }
 
-
-<span class="kw">pub fn </span>crear_matriz(valores:String)-&gt; Vec&lt;Vec&lt;String&gt;&gt;{
-
-    <span class="kw">let </span>valores = valores.trim_matches(|c| c == <span class="string">'(' </span>|| c == <span class="string">')'</span>)
-    .split(<span class="string">"), ("</span>);
+<span class="kw">pub fn </span>crear_matriz(valores: String) -&gt; Vec&lt;Vec&lt;String&gt;&gt; {
+    <span class="kw">let </span>valores = valores.trim_matches(|c| c == <span class="string">'(' </span>|| c == <span class="string">')'</span>).split(<span class="string">"), ("</span>);
 
     <span class="kw">let </span>valores = valores
         .map(|fila| {
-            fila
-                .split(<span class="string">','</span>) <span class="comment">// Divide los valores dentro de cada tupla
+            fila.split(<span class="string">','</span>) <span class="comment">// Divide los valores dentro de cada tupla
                 </span>.map(|v| v.trim().trim_matches(<span class="string">'\''</span>).to_string()) <span class="comment">// Limpia espacios y comillas
-                </span>.collect::&lt;Vec&lt;String&gt;&gt;() 
+                </span>.collect::&lt;Vec&lt;String&gt;&gt;()
         })
         .collect::&lt;Vec&lt;Vec&lt;String&gt;&gt;&gt;();
-    
-    valores
 
+    valores
+}
+
+<span class="attr">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+
+    <span class="kw">use </span>std::vec;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test05devuelve_la_primera_palabra_de_una_consulta() {
+        <span class="kw">let </span>consulta = <span class="string">"UPDATE ordenes SET producto = cangrejo WHERE producto = Altavoces "</span>;
+
+        <span class="kw">let </span>primera_palabra = obtener_primera_palabra(<span class="kw-2">&amp;</span>consulta);
+
+        <span class="kw">let </span>palabra_esperada = <span class="string">"UPDATE"</span>;
+        <span class="macro">assert_eq!</span>(primera_palabra, palabra_esperada);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test06separa_los_datos_del_select_y_los_devuelve() {
+        <span class="kw">let </span>consulta = <span class="string">"SELECT id,producto,cantidad FROM ordenes WHERE producto = Teclado AND cantidad &gt;= 1 ORDER BY CANTIDAD ASC "</span>.to_string();
+
+        <span class="kw">let </span>(nombre_csv, columnas, condiciones) = separar_datos_select(consulta).unwrap();
+
+        <span class="kw">let </span>nombre_csv_esperado = <span class="string">"ordenes"</span>;
+        <span class="kw">let </span>columnas_eperadas = <span class="string">"id,producto,cantidad"</span>;
+        <span class="kw">let </span>condiciones_esperadas = <span class="macro">vec!</span>[
+            <span class="string">"producto"</span>.to_string(),
+            <span class="string">"="</span>.to_string(),
+            <span class="string">"Teclado"</span>.to_string(),
+            <span class="string">"AND"</span>.to_string(),
+            <span class="string">"cantidad"</span>.to_string(),
+            <span class="string">"&gt;="</span>.to_string(),
+            <span class="string">"1"</span>.to_string(),
+            <span class="string">"ORDER"</span>.to_string(),
+            <span class="string">"BY"</span>.to_string(),
+            <span class="string">"CANTIDAD"</span>.to_string(),
+            <span class="string">"ASC"</span>.to_string(),
+        ];
+
+        <span class="macro">assert_eq!</span>(nombre_csv, nombre_csv_esperado);
+        <span class="macro">assert_eq!</span>(columnas, columnas_eperadas);
+        <span class="macro">assert_eq!</span>(condiciones, condiciones_esperadas);
+    }
 }
 </code></pre></div></section></main></body></html>

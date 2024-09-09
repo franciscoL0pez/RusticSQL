@@ -177,75 +177,53 @@
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
 <a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
-<a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
-<a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::manejo_de_csv;
-<span class="kw">use </span>std::io::{<span class="self">self</span>, BufRead, BufReader};
-<span class="kw">use </span>std::fs::File;
 <span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::io::{<span class="self">self</span>, BufRead, BufReader};
 
-<span class="attr">#[derive(Debug)]
+<span class="doccomment">/// Enum para representar los distintos tipos de operadores
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>Operador {
     Igual,
     Distinto,
     Mayor,
     MayorIgual,
     Menor,
-    MenorIgual
+    MenorIgual,
 }
 
-<span class="attr">#[derive(Debug)]
-</span><span class="kw">pub enum </span>OpLogico{
-    AND,
-    OR,
-    NOT
+<span class="doccomment">///Enum para representar los distintos tipos de operadores logicos
+</span><span class="attr">#[derive(Debug)]
+</span><span class="kw">pub enum </span>OpLogico {
+    And,
+    Or,
+    Not,
 }
 
-
-<span class="attr">#[derive(Debug)]
+<span class="doccomment">///Estruct para poder guardar las condiciones separandola en datos
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Condicion {
-    columna: String ,
+    columna: String,
     operador: Operador,
-    valor:String,
-    op_logico:OpLogico
-} 
-
-<span class="comment">//Mal el return..
-</span><span class="kw">pub fn </span>obtener_op_logico(op:<span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;OpLogico&gt;{
-
-    <span class="kw">match </span>op {
-
-        <span class="string">"AND" </span>=&gt; <span class="prelude-val">Some</span>(OpLogico::AND),
-        <span class="string">"OR" </span>=&gt; <span class="prelude-val">Some</span>(OpLogico::OR),
-        <span class="string">"NOT" </span>=&gt; <span class="prelude-val">Some</span>(OpLogico::NOT),
-
-        <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(OpLogico::AND)
-    }
-
+    valor: String,
+    op_logico: OpLogico,
 }
 
-
-
-
-<span class="kw">pub fn </span>obtener_op(op: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Operador&gt; {
-
+<span class="comment">//Funcion para obtener el tipo de operador logico
+</span><span class="kw">pub fn </span>obtener_op_logico(op: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;OpLogico&gt; {
     <span class="kw">match </span>op {
+        <span class="string">"AND" </span>=&gt; <span class="prelude-val">Some</span>(OpLogico::And),
+        <span class="string">"OR" </span>=&gt; <span class="prelude-val">Some</span>(OpLogico::Or),
+        <span class="string">"NOT" </span>=&gt; <span class="prelude-val">Some</span>(OpLogico::Not),
 
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(OpLogico::And),
+    }
+}
+
+<span class="doccomment">///Funcion para obtener el tipo de operador
+</span><span class="kw">pub fn </span>obtener_op(op: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Operador&gt; {
+    <span class="kw">match </span>op {
         <span class="string">"=" </span>=&gt; <span class="prelude-val">Some</span>(Operador::Igual),
         <span class="string">"&lt;" </span>=&gt; <span class="prelude-val">Some</span>(Operador::Menor),
         <span class="string">"&gt;" </span>=&gt; <span class="prelude-val">Some</span>(Operador::Mayor),
@@ -253,140 +231,128 @@
         <span class="string">"&lt;=" </span>=&gt; <span class="prelude-val">Some</span>(Operador::MenorIgual),
         <span class="string">"&gt;=" </span>=&gt; <span class="prelude-val">Some</span>(Operador::MayorIgual),
 
-        <span class="kw">_ </span>=&gt; <span class="prelude-val">None
-    </span>}
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+    }
 }
 
-
-
-<span class="kw">pub fn </span>procesar_condiciones(condiciones:Vec&lt;String&gt;) -&gt; Vec&lt;Condicion&gt;{
-  
-    <span class="kw">let </span><span class="kw-2">mut </span>condiciones_parseadas: Vec&lt;Condicion&gt; = Vec::new(); 
+<span class="doccomment">///Funcion para procesar los distintos tipos de condiciones que pueden llegar dependiendo de la consulta
+///#Recibe un vector de condiciones como por ejemplo:
+</span><span class="kw">pub fn </span>procesar_condiciones(condiciones: Vec&lt;String&gt;) -&gt; Vec&lt;Condicion&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>condiciones_parseadas: Vec&lt;Condicion&gt; = Vec::new();
     <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
-    <span class="macro">println!</span>(<span class="string">"{:?}"</span>,condiciones);
+
     <span class="kw">while </span>condiciones.len() &gt; i {
+        <span class="kw">let </span><span class="kw-2">mut </span>op_logico = OpLogico::And;
 
         <span class="kw">let </span>columna = condiciones[i].to_string();
-
-        <span class="kw">let </span>operador = <span class="kw">match </span>obtener_op(<span class="kw-2">&amp;</span>condiciones[i+<span class="number">1</span>]){
-
+        <span class="kw">let </span>operador = <span class="kw">match </span>obtener_op(<span class="kw-2">&amp;</span>condiciones[i + <span class="number">1</span>]) {
             <span class="prelude-val">Some</span>(operador) =&gt; operador,
             <span class="prelude-val">None </span>=&gt; {
                 <span class="macro">eprintln!</span>(<span class="string">"Operador inválido en la condición: {}"</span>, condiciones[i + <span class="number">1</span>]);
                 <span class="kw">break</span>;
             }
         };
-        <span class="kw">let </span>valor = condiciones[i+<span class="number">2</span>].to_string();
+        <span class="kw">let </span>valor = condiciones[i + <span class="number">2</span>].to_string();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>op_logico =  OpLogico::AND;  <span class="comment">// Mal implementado por que le estoy setendo un opl por default..
-        </span>i +=<span class="number">3</span>;
-     
-        <span class="kw">if </span>condiciones.len() &gt; i {
-            
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(opl) = obtener_op_logico(<span class="kw-2">&amp;</span>condiciones[i]) {
-                op_logico = opl;
-                i+=<span class="number">1</span>;
-                    
-            } 
+        <span class="kw">if </span>i &gt; <span class="number">1 </span>&amp;&amp; condiciones.len() &gt; i {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(op) = obtener_op_logico(<span class="kw-2">&amp;</span>condiciones[i - <span class="number">1</span>]) {
+                op_logico = op;
+            }
         }
-      
-        
 
-        <span class="macro">println!</span>(<span class="string">"{}{:?}{}{:?}"</span>,columna,operador,valor,op_logico);
+        i += <span class="number">4</span>;
         <span class="kw">let </span>condicion = Condicion {
-            columna:columna,
-            operador:operador,
-            valor:valor,
-            op_logico:op_logico
-
+            columna,
+            operador,
+            valor,
+            op_logico,
         };
+
         condiciones_parseadas.push(condicion);
     }
-    condiciones_parseadas 
+    condiciones_parseadas
 }
 
-
-<span class="kw">pub fn </span>comparar_op(condicion:<span class="kw-2">&amp;</span>Condicion,fila: <span class="kw-2">&amp;</span>Vec&lt;String&gt;,pos:usize) -&gt; <span class="prelude-ty">Result</span>&lt;bool,String&gt;{
-
+<span class="kw">pub fn </span>comparar_op(condicion: <span class="kw-2">&amp;</span>Condicion, fila: <span class="kw-2">&amp;</span>[String], pos: usize) -&gt; <span class="prelude-ty">Result</span>&lt;bool, String&gt; {
     <span class="kw">if let </span><span class="prelude-val">Some</span>(valor_f) = fila.get(pos) {
-
-        <span class="kw">match </span>condicion.operador{
-
+        <span class="kw">match </span>condicion.operador {
             Operador::Igual =&gt; <span class="prelude-val">Ok</span>(valor_f == <span class="kw-2">&amp;</span>condicion.valor),
-            Operador::Mayor =&gt; <span class="prelude-val">Ok</span>(valor_f.parse::&lt;i32&gt;().ok() &gt; condicion.valor.parse::&lt;i32&gt;().ok()),
-            Operador::Menor =&gt; <span class="prelude-val">Ok</span>(valor_f.parse::&lt;i32&gt;().ok() &lt; condicion.valor.parse::&lt;i32&gt;().ok()),
+            Operador::Mayor =&gt; {
+                <span class="prelude-val">Ok</span>(valor_f.parse::&lt;i32&gt;().ok() &gt; condicion.valor.parse::&lt;i32&gt;().ok())
+            }
+            Operador::Menor =&gt; {
+                <span class="prelude-val">Ok</span>(valor_f.parse::&lt;i32&gt;().ok() &lt; condicion.valor.parse::&lt;i32&gt;().ok())
+            }
             Operador::Distinto =&gt; <span class="prelude-val">Ok</span>(valor_f != <span class="kw-2">&amp;</span>condicion.valor),
-            Operador::MayorIgual =&gt; <span class="prelude-val">Ok</span>(valor_f.parse::&lt;i32&gt;().ok() &gt;= condicion.valor.parse::&lt;i32&gt;().ok()),
-            Operador::MenorIgual =&gt; <span class="prelude-val">Ok</span>(valor_f.parse::&lt;i32&gt;().ok() &lt;= condicion.valor.parse::&lt;i32&gt;().ok()),
-
-            
-
+            Operador::MayorIgual =&gt; {
+                <span class="prelude-val">Ok</span>(valor_f.parse::&lt;i32&gt;().ok() &gt;= condicion.valor.parse::&lt;i32&gt;().ok())
+            }
+            Operador::MenorIgual =&gt; {
+                <span class="prelude-val">Ok</span>(valor_f.parse::&lt;i32&gt;().ok() &lt;= condicion.valor.parse::&lt;i32&gt;().ok())
+            }
         }
-
-    }
-    <span class="kw">else </span>{
-        <span class="prelude-val">Err</span>( <span class="string">"INVALID_COLUMN: La columna ingresada no se encuntra en el csv"</span>.to_string())
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Err</span>(<span class="string">"INVALID_SYNTAX: El operador ingresado no existe"</span>.to_string())
     }
 }
 
-
-<span class="kw">pub fn </span>comparar_op_logico(condiciones_parseadas:<span class="kw-2">&amp;</span>Vec&lt;Condicion&gt;,fila: <span class="kw-2">&amp;</span>Vec&lt;String&gt; ,header:<span class="kw-2">&amp;</span>Vec&lt;String&gt;) -&gt; <span class="prelude-ty">Result </span>&lt;bool,String&gt; {
+<span class="kw">pub fn </span>comparar_op_logico(
+    condiciones_parseadas: <span class="kw-2">&amp;</span>[Condicion],
+    fila: <span class="kw-2">&amp;</span>[String],
+    header: <span class="kw-2">&amp;</span>[String],
+) -&gt; <span class="prelude-ty">Result</span>&lt;bool, String&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>resultado = <span class="bool-val">true</span>;
-    
+
     <span class="kw">for </span>condicion <span class="kw">in </span>condiciones_parseadas.iter() {
-       
-       <span class="kw">let </span>pos = <span class="kw">match </span>manejo_de_csv::obtener_posicion_header(<span class="kw-2">&amp;</span>condicion.columna, <span class="kw-2">&amp;</span>header) {
+        <span class="kw">let </span>pos = <span class="kw">match </span>manejo_de_csv::obtener_posicion_header(<span class="kw-2">&amp;</span>condicion.columna, header) {
             <span class="prelude-val">Ok</span>(p) =&gt; p,
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="macro">eprintln!</span>(<span class="string">"{}"</span>, e); <span class="comment">// Error al leer el header
                 </span><span class="kw">break</span>;
             }
         };
-     
 
         <span class="kw">let </span>segundo_resultado = <span class="kw">match </span>comparar_op(condicion, fila, pos) {
-                <span class="prelude-val">Ok</span>(segundo_resultado) =&gt; {segundo_resultado}
+            <span class="prelude-val">Ok</span>(segundo_resultado) =&gt; segundo_resultado,
 
-                <span class="prelude-val">Err</span>(e) =&gt; {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, e));
-                }
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e.to_string());
+            }
         };
 
         <span class="kw">match </span>condicion.op_logico {
-            OpLogico::AND =&gt; resultado = resultado &amp;&amp; segundo_resultado,
-            OpLogico::OR =&gt; resultado = resultado || segundo_resultado,
-            OpLogico::NOT =&gt; resultado = resultado &amp;&amp; !segundo_resultado,
+            OpLogico::And =&gt; resultado = resultado &amp;&amp; segundo_resultado,
+            OpLogico::Or =&gt; resultado = resultado || segundo_resultado,
+            OpLogico::Not =&gt; resultado = resultado &amp;&amp; !segundo_resultado,
         }
     }
 
-   
     <span class="prelude-val">Ok</span>(resultado)
-} 
+}
 
-
-<span class="kw">pub fn </span>comparar_con_csv(condiciones_parseadas:Vec&lt;Condicion&gt;, ruta_csv: String,header:Vec&lt;String&gt;) -&gt;<span class="prelude-ty">Result</span>&lt;Vec&lt;Vec&lt;String&gt;&gt;, Box&lt;<span class="kw">dyn </span>Error&gt;&gt;{
+<span class="kw">pub fn </span>comparar_con_csv(
+    condiciones_parseadas: Vec&lt;Condicion&gt;,
+    ruta_csv: String,
+    header: Vec&lt;String&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Vec&lt;String&gt;&gt;, Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
     <span class="kw">let </span>archivo = File::open(<span class="kw-2">&amp;</span>ruta_csv)<span class="question-mark">?</span>;
     <span class="kw">let </span>lector = BufReader::new(archivo);
     <span class="kw">let </span><span class="kw-2">mut </span>matriz: Vec&lt;Vec&lt;String&gt;&gt; = Vec::new();
 
-    <span class="kw">for </span>linea <span class="kw">in </span>lector.lines(){
-        
+    <span class="kw">for </span>linea <span class="kw">in </span>lector.lines() {
         <span class="kw">let </span>fila: Vec&lt;String&gt; = linea<span class="question-mark">?</span>.split(<span class="string">','</span>).map(|s| s.trim().to_string()).collect();
 
-        <span class="kw">let </span>cumple_condiciones = <span class="kw">match </span>comparar_op_logico(<span class="kw-2">&amp;</span>condiciones_parseadas, <span class="kw-2">&amp;</span>fila, <span class="kw-2">&amp;</span>header){
-            <span class="prelude-val">Ok</span>(segundo_resultado) =&gt; {segundo_resultado}
-
+        <span class="kw">let </span>cumple_condiciones = <span class="kw">match </span>comparar_op_logico(<span class="kw-2">&amp;</span>condiciones_parseadas, <span class="kw-2">&amp;</span>fila, <span class="kw-2">&amp;</span>header) {
+            <span class="prelude-val">Ok</span>(segundo_resultado) =&gt; segundo_resultado,
 
             <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Box::new(io::Error::new(io::ErrorKind::Other, e))),
-        
-
         };
 
         <span class="kw">if </span>cumple_condiciones {
             matriz.push(fila);
         }
     }
-    matriz.insert(<span class="number">0</span>,header);
+    matriz.insert(<span class="number">0</span>, header);
 
     <span class="prelude-val">Ok</span>(matriz)
 }

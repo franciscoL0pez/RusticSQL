@@ -163,168 +163,271 @@
 <a href="#163" id="163">163</a>
 <a href="#164" id="164">164</a>
 <a href="#165" id="165">165</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::path::Path;
-<span class="kw">use </span>std::fs::OpenOptions;
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::fs::rename;
 <span class="kw">use </span>std::fs::File;
-<span class="kw">use </span>std::io::{<span class="self">self</span>, BufRead, Write,BufReader};
-<span class="kw">use </span>std::fs::rename;
+<span class="kw">use </span>std::fs::OpenOptions;
+<span class="kw">use </span>std::io::{<span class="self">self</span>, BufRead, BufReader, Write};
+<span class="kw">use </span>std::path::Path;
 
 <span class="comment">//Por ahora leo el archivo, saco el header y atajo el error asi
-</span><span class="kw">pub fn </span>leer_header(archivo: <span class="kw-2">&amp;</span>String) -&gt;  io::Result&lt;Vec&lt;String&gt;&gt;{
-    <span class="kw">let </span>path = Path::new(archivo); 
-    <span class="kw">let </span>file = File::open(path)<span class="question-mark">?</span>; 
-    <span class="kw">let </span>reader = io::BufReader::new(file); 
+</span><span class="kw">pub fn </span>leer_header(archivo: <span class="kw-2">&amp;</span>String) -&gt; io::Result&lt;Vec&lt;String&gt;&gt; {
+    <span class="kw">let </span>path = Path::new(archivo);
+    <span class="kw">let </span>file = File::open(path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>reader = io::BufReader::new(file);
 
     <span class="kw">let </span><span class="kw-2">mut </span>lineas = reader.lines();
 
     <span class="comment">//Leo la primera ya que quiero saber como es la estructura de mi archivo
     //Devuelvo el header o en caso de que no es
-  </span><span class="kw">if let </span><span class="prelude-val">Some</span>(header_line) = lineas.next() {
-      <span class="kw">let </span>header_line = header_line<span class="question-mark">?</span>;
-      <span class="kw">let </span>header: Vec&lt;String&gt; = header_line.split(<span class="string">','</span>)
-                                              .map(|s| s.trim().to_string())
-                                              .collect();
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(header_line) = lineas.next() {
+        <span class="kw">let </span>header_line = header_line<span class="question-mark">?</span>;
+        <span class="kw">let </span>header: Vec&lt;String&gt; = header_line
+            .split(<span class="string">','</span>)
+            .map(|s| s.trim().to_string())
+            .collect();
 
-        <span class="prelude-val">Ok</span>(header) <span class="comment">// Devuelve el vector de 
-      
-        </span>} <span class="kw">else </span>{
-            <span class="prelude-val">Err</span>(io::Error::new(io::ErrorKind::NotFound, <span class="string">"CSV_Error:Error al leer el csv"</span>))
-        }
-
-   
+        <span class="prelude-val">Ok</span>(header) <span class="comment">// Devuelve el vector de
+    </span>} <span class="kw">else </span>{
+        <span class="prelude-val">Err</span>(io::Error::new(
+            io::ErrorKind::NotFound,
+            <span class="string">"CSV_Error:Error al leer el csv"</span>,
+        ))
+    }
 }
 
-
-<span class="kw">pub fn </span>obtener_ruta_del_csv(ruta:String,nombre_del_csv:<span class="kw-2">&amp;</span>str) -&gt; String{
-
+<span class="kw">pub fn </span>obtener_ruta_del_csv(ruta: String, nombre_del_csv: <span class="kw-2">&amp;</span>str) -&gt; String {
     <span class="kw">let </span>palabras: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = nombre_del_csv.split(<span class="string">" "</span>).collect();
     <span class="kw">let </span>nombre_del_csv = palabras[<span class="number">0</span>];
 
-    <span class="kw">let </span>ruta_de_csv = <span class="macro">format!</span>(<span class="string">"{}{}{}{}"</span>,ruta,<span class="string">"/"</span>,nombre_del_csv,<span class="string">".csv"</span>);
+    <span class="kw">let </span>ruta_de_csv = <span class="macro">format!</span>(<span class="string">"{}{}{}{}"</span>, ruta, <span class="string">"/"</span>, nombre_del_csv, <span class="string">".csv"</span>);
 
     ruta_de_csv.to_string()
-
 }
 
-
-<span class="kw">pub fn </span>escribir_csv(ruta_csv: String, linea:<span class="kw-2">&amp;</span>str)-&gt;io::Result&lt;()&gt;{ 
-  
-    <span class="kw">let </span><span class="kw-2">mut </span>archivo = OpenOptions::new()
-    .append(<span class="bool-val">true</span>)
-    .open(ruta_csv)<span class="question-mark">?</span>;
-
+<span class="kw">pub fn </span>escribir_csv(ruta_csv: String, linea: <span class="kw-2">&amp;</span>str) -&gt; io::Result&lt;()&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>archivo = OpenOptions::new().append(<span class="bool-val">true</span>).open(ruta_csv)<span class="question-mark">?</span>;
 
     <span class="macro">writeln!</span>(archivo, <span class="string">"{}"</span>, linea)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
-
 }
 
-<span class="kw">pub </span><span class="comment">//Achicar la funcion!
-</span><span class="kw">fn </span>actualizar_csv(ruta_csv:String,header:Vec&lt;String&gt;,campos:Vec&lt;String&gt;,clave:Vec&lt;String&gt;)-&gt; io::Result&lt;()&gt;{
-
+<span class="kw">pub fn </span>actualizar_csv(
+    ruta_csv: String,
+    header: Vec&lt;String&gt;,
+    campos: Vec&lt;String&gt;,
+    clave: Vec&lt;String&gt;,
+) -&gt; io::Result&lt;()&gt; {
     <span class="kw">let </span>archivo = File::open(<span class="kw-2">&amp;</span>ruta_csv)<span class="question-mark">?</span>;
     <span class="kw">let </span>lector = BufReader::new(archivo);
     <span class="kw">let </span>archivo_temporal = <span class="string">"auxiliar.csv"</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>archivo_tem = File::create(archivo_temporal)<span class="question-mark">?</span>;
 
-
-    <span class="kw">let </span>pos = header.iter().position(|s| <span class="kw-2">*</span>s == clave[<span class="number">0</span>].to_string());
-    
-    <span class="kw">let </span>indice = <span class="kw">match </span>pos {
-
-        <span class="prelude-val">Some</span>(i) =&gt; i,
-
-        <span class="prelude-val">None </span>=&gt; {
-          
-            <span class="kw">return </span><span class="prelude-val">Err</span>(io::Error::new(io::ErrorKind::NotFound, <span class="string">"INVALID_COLUMN: Error al buscar las columnas en la consulta"</span>));
-        },
-        
-    }; 
+    <span class="kw">let </span>indice = obtener_posicion_header(<span class="kw-2">&amp;</span>clave[<span class="number">0</span>], <span class="kw-2">&amp;</span>header).map_err(|e| {
+        <span class="macro">eprintln!</span>(<span class="string">"{}"</span>, e);
+        io::Error::new(io::ErrorKind::InvalidInput, e)
+    })<span class="question-mark">?</span>;
 
     <span class="comment">//Quiero encontrar la clave en alguna linea y si la encuentro la reemplazo por los valores que me dieron
-    </span><span class="kw">for </span>linea <span class="kw">in </span>lector.lines(){
-        <span class="kw">let </span><span class="kw-2">mut </span>linea_csv: Vec&lt;String&gt; = linea<span class="question-mark">?</span>.split(<span class="string">','</span>).map(|s| s.trim().to_string()) .collect();
-        
+    </span><span class="kw">for </span>linea <span class="kw">in </span>lector.lines() {
+        <span class="kw">let </span><span class="kw-2">mut </span>linea_csv: Vec&lt;String&gt; = linea<span class="question-mark">?</span>.split(<span class="string">','</span>).map(|s| s.trim().to_string()).collect();
+
         <span class="comment">//Si el valor de la clave coicide, encontre el elemento que quiero cambiar
         </span><span class="kw">if </span>clave[<span class="number">1</span>] == linea_csv[indice] {
-
-            <span class="kw">for </span>(i,valor_para_act) <span class="kw">in </span>campos.iter().enumerate(){
-
-                 <span class="kw">for </span>(j, val_header) <span class="kw">in </span>header.iter().enumerate() {
-
-                    <span class="kw">if </span>valor_para_act == val_header { linea_csv[j] = campos[i+<span class="number">1</span>].to_string(); }
-
-                 }  
-            
+            <span class="kw">for </span>(i, valor_para_act) <span class="kw">in </span>campos.iter().enumerate() {
+                <span class="kw">for </span>(j, val_header) <span class="kw">in </span>header.iter().enumerate() {
+                    <span class="kw">if </span>valor_para_act == val_header {
+                        linea_csv[j] = campos[i + <span class="number">1</span>].to_string();
+                    }
+                }
             }
-            
-            <span class="kw">let </span>nueva_linea = linea_csv.join(<span class="string">","</span>);
-            <span class="macro">writeln!</span>(archivo_tem,<span class="string">"{}"</span>,nueva_linea)<span class="question-mark">?</span>;
 
+            <span class="kw">let </span>nueva_linea = linea_csv.join(<span class="string">","</span>);
+            <span class="macro">writeln!</span>(archivo_tem, <span class="string">"{}"</span>, nueva_linea)<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
             <span class="kw">let </span>linea = linea_csv.join(<span class="string">","</span>);
-            <span class="kw">let _ </span>= <span class="macro">writeln!</span>(archivo_tem,<span class="string">"{}"</span>,linea);    
-                
-            }
+            <span class="kw">let _ </span>= <span class="macro">writeln!</span>(archivo_tem, <span class="string">"{}"</span>, linea);
+        }
     }
-    
-    <span class="kw">let _ </span>= rename(archivo_temporal,ruta_csv);
+
+    <span class="kw">let _ </span>= rename(archivo_temporal, ruta_csv);
 
     <span class="prelude-val">Ok</span>(())
 }
 
-
-<span class="kw">pub fn </span>borrar_lineas_csv(ruta_csv:String,header:Vec&lt;String&gt;,clave:Vec&lt;String&gt;)-&gt; io::Result&lt;()&gt;{
+<span class="kw">pub fn </span>borrar_lineas_csv(
+    ruta_csv: String,
+    header: Vec&lt;String&gt;,
+    clave: Vec&lt;String&gt;,
+) -&gt; io::Result&lt;()&gt; {
     <span class="kw">let </span>archivo = File::open(<span class="kw-2">&amp;</span>ruta_csv)<span class="question-mark">?</span>;
     <span class="kw">let </span>lector = BufReader::new(archivo);
     <span class="kw">let </span>archivo_temporal = <span class="string">"auxiliar.csv"</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>archivo_tem = File::create(archivo_temporal)<span class="question-mark">?</span>;
-    
-    <span class="kw">let </span>pos = header.iter().position(|s| <span class="kw-2">*</span>s == clave[<span class="number">0</span>].to_string());
-    
-    <span class="kw">let </span>indice = <span class="kw">match </span>pos {
 
-        <span class="prelude-val">Some</span>(i) =&gt; i,
+    <span class="kw">let </span>indice = obtener_posicion_header(<span class="kw-2">&amp;</span>clave[<span class="number">0</span>], <span class="kw-2">&amp;</span>header).map_err(|e| {
+        <span class="macro">eprintln!</span>(<span class="string">"{}"</span>, e);
+        io::Error::new(io::ErrorKind::InvalidInput, e)
+    })<span class="question-mark">?</span>;
 
-        <span class="prelude-val">None </span>=&gt; {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(io::Error::new(io::ErrorKind::NotFound, <span class="string">"INVALID_COLUMN: Error al buscar las columnas en la consulta"</span>));
-        },
-        
-    }; 
-    
+    <span class="kw">for </span>linea <span class="kw">in </span>lector.lines() {
+        <span class="kw">let </span>linea_csv: Vec&lt;String&gt; = linea<span class="question-mark">?</span>.split(<span class="string">','</span>).map(|s| s.trim().to_string()).collect();
 
-    <span class="kw">for </span>linea <span class="kw">in </span>lector.lines(){
-        <span class="kw">let  </span>linea_csv: Vec&lt;String&gt; = linea<span class="question-mark">?</span>.split(<span class="string">','</span>).map(|s| s.trim().to_string()) .collect();
-        
         <span class="comment">//Si el valor de la clave coicide, encontre el elemento que quiero eliminar
         </span><span class="kw">if </span>clave[<span class="number">1</span>] != linea_csv[indice] {
-
             <span class="kw">let </span>nueva_linea = linea_csv.join(<span class="string">","</span>);
-            <span class="macro">writeln!</span>(archivo_tem,<span class="string">"{}"</span>,nueva_linea)<span class="question-mark">?</span>;
-        }         
+            <span class="macro">writeln!</span>(archivo_tem, <span class="string">"{}"</span>, nueva_linea)<span class="question-mark">?</span>;
+        }
+    }
 
-      
-    }   
-    
-
-    <span class="kw">let _ </span>= rename(archivo_temporal,ruta_csv);
+    <span class="kw">let _ </span>= rename(archivo_temporal, ruta_csv);
     <span class="prelude-val">Ok</span>(())
-    
 }
 
-<span class="kw">pub fn </span>obtener_posicion_header(clave:<span class="kw-2">&amp;</span>str, header:<span class="kw-2">&amp;</span>Vec&lt;String&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize,String&gt;{
+<span class="kw">pub fn </span>obtener_posicion_header(clave: <span class="kw-2">&amp;</span>str, header: <span class="kw-2">&amp;</span>[String]) -&gt; <span class="prelude-ty">Result</span>&lt;usize, String&gt; {
+    <span class="kw">let </span>pos = header.iter().position(|s| s == clave);
 
-    <span class="kw">let </span>pos = header.iter().position(|s| <span class="kw-2">*</span>s == clave.to_string());
-    
-    <span class="kw">let </span>_i = <span class="kw">match </span>pos {
+    <span class="kw">match </span>pos {
+        <span class="prelude-val">Some</span>(i) =&gt; <span class="prelude-val">Ok</span>(i),
+        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(<span class="string">"INVALID_COLUMN: La columna ingresada no se encuntra en el csv"</span>.to_string()),
+    }
+}
 
-        <span class="prelude-val">Some</span>(i) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(i),
+<span class="attr">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::fs::remove_file;
 
-        <span class="prelude-val">None </span>=&gt; {
-            <span class="kw">return </span><span class="prelude-val">Err</span>( <span class="string">"INVALID_COLUMN: La columna ingresada no se encuntra en el csv"</span>.to_string());
-        },
-        
-    }; 
-   
-}</code></pre></div></section></main></body></html>
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test01leer_header_y_devolverlo() {
+        <span class="kw">let </span>direccion_del_archivo = <span class="string">"Archivos_Csv/ordenes.csv"</span>.to_string();
+
+        <span class="kw">let </span>resultado = leer_header(<span class="kw-2">&amp;</span>direccion_del_archivo);
+        <span class="macro">assert!</span>(resultado.is_ok());
+
+        <span class="kw">let </span>header = resultado.unwrap();
+        <span class="macro">assert_eq!</span>(header, <span class="macro">vec!</span>[<span class="string">"id"</span>, <span class="string">"id_cliente"</span>, <span class="string">"producto"</span>, <span class="string">"cantidad"</span>]);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test02leemos_el_header_y_ocurre_un_error() {
+        <span class="kw">let </span>direccion_del_archivo = <span class="string">""</span>.to_string();
+
+        <span class="kw">let </span>resultado = leer_header(<span class="kw-2">&amp;</span>direccion_del_archivo);
+        <span class="macro">assert!</span>(resultado.is_err());
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test03se_actualiza_el_csv_segun_una_clave() {
+        <span class="comment">//Para testear esta funcion creo un archivo de prueba y lo elimino al final
+        </span><span class="kw">let </span>ruta_csv = <span class="string">"test.csv"</span>.to_string();
+        <span class="kw">let </span><span class="kw-2">mut </span>archivo = File::create(<span class="kw-2">&amp;</span>ruta_csv).unwrap();
+
+        <span class="kw">let </span>header = <span class="macro">vec!</span>[<span class="string">"id"</span>.to_string(), <span class="string">"nombre"</span>.to_string(), <span class="string">"edad"</span>.to_string()];
+        <span class="kw">let </span>campos = <span class="macro">vec!</span>[<span class="string">"edad"</span>.to_string(), <span class="string">"40"</span>.to_string()];
+        <span class="kw">let </span>clave = <span class="macro">vec!</span>[<span class="string">"id"</span>.to_string(), <span class="string">"1"</span>.to_string()];
+
+        <span class="comment">//Le pongo algunos datos para el test
+        </span><span class="kw">let </span>datos_in = <span class="string">"id,nombre,edad\n1,Juan,25\n2,Maria,30\n"</span>;
+        archivo.write_all(datos_in.as_bytes()).unwrap();
+        drop(archivo);
+
+        <span class="comment">//Abuso un poquito del echo de que estamos probando un test y uso un clone para pasar ruta_csv
+        </span>actualizar_csv(ruta_csv.clone(), header, campos, clave).unwrap();
+
+        <span class="kw">let </span>archivo = File::open(<span class="kw-2">&amp;</span>ruta_csv).unwrap();
+        <span class="kw">let </span>lector = BufReader::new(archivo);
+        <span class="kw">let </span><span class="kw-2">mut </span>lineas = lector.lines();
+
+        <span class="comment">//Me quedo con la 2 linea ya que luego del header es la que actualice
+        </span><span class="kw">let _ </span>= lineas.next().unwrap();
+        <span class="kw">let </span>linea_actualizada = lineas.next().unwrap().unwrap();
+        <span class="kw">let </span>linea_esperada = <span class="string">"1,Juan,40"</span>.to_string();
+
+        remove_file(<span class="kw-2">&amp;</span>ruta_csv).unwrap();
+        <span class="macro">assert_eq!</span>(linea_esperada, linea_actualizada);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test04se_elimina_del_csv_una_linea() {
+        <span class="comment">//Vuelvo a crear mi archivo de prueba
+        </span><span class="kw">let </span>ruta_csv = <span class="string">"test_1.csv"</span>.to_string();
+        <span class="kw">let </span><span class="kw-2">mut </span>archivo = File::create(<span class="kw-2">&amp;</span>ruta_csv).unwrap();
+
+        <span class="kw">let </span>header = <span class="macro">vec!</span>[<span class="string">"id"</span>.to_string(), <span class="string">"nombre"</span>.to_string(), <span class="string">"edad"</span>.to_string()];
+        <span class="kw">let </span>clave = <span class="macro">vec!</span>[<span class="string">"id"</span>.to_string(), <span class="string">"1"</span>.to_string()];
+
+        <span class="comment">//Le pongo algunos datos para el test
+        </span><span class="kw">let </span>datos_in = <span class="string">"id,nombre,edad\n1,Juan,25\n2,Maria,30\n"</span>;
+        archivo.write_all(datos_in.as_bytes()).unwrap();
+        drop(archivo);
+
+        borrar_lineas_csv(ruta_csv.clone(), header, clave).unwrap();
+
+        <span class="kw">let </span>archivo = File::open(<span class="kw-2">&amp;</span>ruta_csv).unwrap();
+        <span class="kw">let </span>lector = BufReader::new(archivo);
+        <span class="kw">let </span><span class="kw-2">mut </span>lineas = lector.lines();
+
+        <span class="comment">//Me quedo con la 2 linea ya que luego del header es la que actualice
+        </span><span class="kw">let _ </span>= lineas.next().unwrap();
+        <span class="kw">let </span>linea_actualizada = lineas.next().unwrap().unwrap();
+        <span class="kw">let </span>linea_esperada = <span class="string">"1,Juan,25"</span>.to_string();
+
+        <span class="comment">//Como elimine la 2 linea comparo y tienen que ser distintas
+        </span>remove_file(<span class="kw-2">&amp;</span>ruta_csv).unwrap();
+        <span class="macro">assert_ne!</span>(linea_esperada, linea_actualizada);
+    }
+}
+</code></pre></div></section></main></body></html>

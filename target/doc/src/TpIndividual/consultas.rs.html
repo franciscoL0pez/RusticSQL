@@ -172,177 +172,196 @@
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::manejo_de_string;
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::condiciones;
 <span class="kw">use </span><span class="kw">crate</span>::manejo_de_csv;
-<span class="kw">use </span><span class="kw">crate</span>::condiciones;
+<span class="kw">use </span><span class="kw">crate</span>::manejo_de_string;
 
+<span class="doccomment">///Funcion que se encarga de manejar la consulta "INSERT"
+/// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos e insertar los datos
+</span><span class="kw">pub fn </span>insert(consulta_sql: String, ruta_del_archivo: String) {
+    <span class="kw">let </span>(direccion_y_columnas, valores) = manejo_de_string::separar_datos(consulta_sql);
 
-<span class="kw">pub fn </span>insert(consulta_sql: String,ruta_del_archivo: String) {
-    <span class="kw">let </span>(direccion_y_columnas,valores) = manejo_de_string::separar_datos(consulta_sql);
-
-    <span class="kw">let </span>ruta = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo,<span class="kw-2">&amp;</span>direccion_y_columnas);
+    <span class="kw">let </span>ruta = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, <span class="kw-2">&amp;</span>direccion_y_columnas);
     <span class="kw">let </span>valores = manejo_de_string::crear_matriz(valores);
 
-    
-    <span class="kw">for </span>fila <span class="kw">in </span>valores.iter(){
-       <span class="kw">let </span>linea = fila.join(<span class="string">","</span>);
+    <span class="kw">for </span>fila <span class="kw">in </span>valores.iter() {
+        <span class="kw">let </span>linea = fila.join(<span class="string">","</span>);
 
-        <span class="kw">let _ </span>=manejo_de_csv::escribir_csv(ruta.to_string(), <span class="kw-2">&amp;</span>linea);
+        <span class="kw">let _ </span>= manejo_de_csv::escribir_csv(ruta.to_string(), <span class="kw-2">&amp;</span>linea);
     }
-
 }
 
+<span class="doccomment">///Funcion que se encarga de manejar la consulta "UPDATE"
+/// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el update
+</span><span class="kw">pub fn </span>update(consulta_sql: String, ruta_del_archivo: String) {
+    <span class="kw">let </span>(nombre_del_csv, campos_para_actualizar, donde_actualizar) =
+        <span class="kw">match </span>manejo_de_string::separar_datos_update(consulta_sql) {
+            <span class="prelude-val">Ok</span>((nombre_del_csv, campos_para_actualizar, donde_actualizar)) =&gt; {
+                (nombre_del_csv, campos_para_actualizar, donde_actualizar)
+            }
 
-<span class="kw">pub fn </span>update(consulta_sql: String, ruta_del_archivo: String){
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+                <span class="kw">return</span>;
+            }
+        };
 
-    <span class="kw">let </span>(nombre_del_csv,campos_para_actualizar, donde_actualizar) =  <span class="kw">match </span>manejo_de_string::separar_datos_update(consulta_sql) {
-        <span class="prelude-val">Ok</span>((nombre_del_csv,campos_para_actualizar,donde_actualizar)) =&gt; {(nombre_del_csv,campos_para_actualizar, donde_actualizar)}
-
-        <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-        <span class="kw">return</span>; },
-        
-    };
-   
-    <span class="kw">let </span>ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo,<span class="kw-2">&amp;</span>nombre_del_csv);
+    <span class="kw">let </span>ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, <span class="kw-2">&amp;</span>nombre_del_csv);
 
     <span class="kw">let </span>header = <span class="kw">match </span>manejo_de_csv::leer_header(<span class="kw-2">&amp;</span>ruta_csv) {
-        <span class="prelude-val">Ok</span>(header) =&gt; {header}
+        <span class="prelude-val">Ok</span>(header) =&gt; header,
 
-        <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-        <span class="kw">return</span>;}, 
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+            <span class="kw">return</span>;
+        }
     };
-    
 
-    <span class="kw">let _ </span>= manejo_de_csv::actualizar_csv(ruta_csv, header,campos_para_actualizar,donde_actualizar);
-    
-
+    <span class="kw">let _ </span>=
+        manejo_de_csv::actualizar_csv(ruta_csv, header, campos_para_actualizar, donde_actualizar);
 }
 
+<span class="doccomment">///Funcion que se encarga de manejar la consulta "UPDATE"
+/// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el delete
+</span><span class="kw">pub fn </span>delete(consulta_sql: String, ruta_del_archivo: String) {
+    <span class="kw">let </span>(nombre_del_csv, clave) = <span class="kw">match </span>manejo_de_string::separar_datos_delete(consulta_sql) {
+        <span class="prelude-val">Ok</span>((nombre_del_csv, clave)) =&gt; (nombre_del_csv, clave),
 
-<span class="kw">pub fn </span>delete(consulta_sql: String, ruta_del_archivo: String){
-
-
-    <span class="kw">let </span>(nombre_del_csv,clave) =  <span class="kw">match </span>manejo_de_string::separar_datos_delete(consulta_sql) {
-        <span class="prelude-val">Ok</span>((nombre_del_csv,clave)) =&gt; {(nombre_del_csv,clave)}
-
-        <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-        <span class="kw">return</span>; },
-        
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+            <span class="kw">return</span>;
+        }
     };
 
-    
-    <span class="kw">let </span>ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo,<span class="kw-2">&amp;</span>nombre_del_csv);
-    
+    <span class="kw">let </span>ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, <span class="kw-2">&amp;</span>nombre_del_csv);
+
     <span class="kw">let </span>header = <span class="kw">match </span>manejo_de_csv::leer_header(<span class="kw-2">&amp;</span>ruta_csv) {
-        <span class="prelude-val">Ok</span>(header) =&gt; {header}
+        <span class="prelude-val">Ok</span>(header) =&gt; header,
 
-        <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-        <span class="kw">return</span>;}, 
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+            <span class="kw">return</span>;
+        }
     };
-   
 
     <span class="kw">let _ </span>= manejo_de_csv::borrar_lineas_csv(ruta_csv, header, clave);
-
 }
 
-<span class="kw">fn </span>ordenar_matriz(matriz:Vec&lt;Vec&lt;String&gt;&gt;, ordenamiento:Vec&lt;String&gt;,header:<span class="kw-2">&amp;</span>Vec&lt;String&gt;) -&gt; <span class="prelude-ty">Result </span>&lt;Vec&lt;Vec&lt;String&gt;&gt;,String&gt; {
-
+<span class="doccomment">///Funcion para ordenar las lineas cuando se hace un SELECT
+/// Recibe la matriz, el header y un vector ordenamiento, con la condicion y si es ASC o DESC
+</span><span class="kw">fn </span>ordenar_matriz(
+    matriz: Vec&lt;Vec&lt;String&gt;&gt;,
+    ordenamiento: Vec&lt;String&gt;,
+    header: <span class="kw-2">&amp;</span>[String],
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Vec&lt;String&gt;&gt;, String&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>matriz = matriz;
     <span class="kw">let </span>fila_1 = matriz.remove(<span class="number">0</span>);
 
-    <span class="kw">let </span>pos = <span class="kw">match </span>manejo_de_csv::obtener_posicion_header(<span class="kw-2">&amp;</span>ordenamiento[<span class="number">1</span>].to_lowercase(), <span class="kw-2">&amp;</span>header) {
-        <span class="prelude-val">Ok</span>(pos) =&gt; {pos}
+    <span class="kw">let </span>pos = <span class="kw">match </span>manejo_de_csv::obtener_posicion_header(<span class="kw-2">&amp;</span>ordenamiento[<span class="number">1</span>].to_lowercase(), header)
+    {
+        <span class="prelude-val">Ok</span>(pos) =&gt; pos,
 
         <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">"{}"</span>, e));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(e.to_string());
         }
     };
 
     <span class="kw">if </span>ordenamiento[<span class="number">2</span>] == <span class="string">"ASC" </span>{
-
         matriz.sort_by(|a, b| a[pos].cmp(<span class="kw-2">&amp;</span>b[pos]));
-       
+    } <span class="kw">else if </span>ordenamiento[<span class="number">2</span>] == <span class="string">"DESC" </span>{
+        matriz.sort_by(|a, b| b[pos].cmp(<span class="kw-2">&amp;</span>a[pos]));
     }
 
-    <span class="kw">else if </span>ordenamiento[<span class="number">2</span>] == <span class="string">"DESC" </span>{
-        matriz.sort_by(|a, b| b[pos].cmp(<span class="kw-2">&amp;</span>a[pos]));
-       
-    }
-    
     matriz.insert(<span class="number">0</span>, fila_1);
 
     <span class="prelude-val">Ok</span>(matriz)
-  
-
-
-    
 }
-
-<span class="kw">fn </span>mostrar_select(matriz:Vec&lt;Vec&lt;String&gt;&gt;, columnas_selec:String,header:<span class="kw-2">&amp;</span>Vec&lt;String&gt;,ordenamiento:Vec&lt;String&gt;){
-
-    <span class="kw">let </span>columnas_selec: Vec&lt;String&gt; = columnas_selec.split(<span class="string">','</span>).map(|s| s.trim().to_string()).collect();
+<span class="doccomment">///Funcion para mostrar las columnas que se piden durante el SELECT
+///Segun las columnas seleccionadas en el SELECT recibe la matriz previamente armada y muestra en orden dichas columnas con sus datos.
+</span><span class="kw">fn </span>mostrar_select(
+    matriz: Vec&lt;Vec&lt;String&gt;&gt;,
+    columnas_selec: String,
+    header: <span class="kw-2">&amp;</span>[String],
+    ordenamiento: Vec&lt;String&gt;,
+) {
+    <span class="kw">let </span>columnas_selec: Vec&lt;String&gt; = columnas_selec
+        .split(<span class="string">','</span>)
+        .map(|s| s.trim().to_string())
+        .collect();
     <span class="kw">let </span><span class="kw-2">mut </span>posiciones: Vec&lt;usize&gt; = Vec::new();
 
-    <span class="kw">for </span>valor <span class="kw">in </span><span class="kw-2">&amp;</span>columnas_selec{
+    <span class="kw">for </span>valor <span class="kw">in </span><span class="kw-2">&amp;</span>columnas_selec {
+        <span class="kw">match </span>manejo_de_csv::obtener_posicion_header(valor, header) {
+            <span class="prelude-val">Ok</span>(pos) =&gt; posiciones.push(pos),
 
-        <span class="kw">let </span>_pos = <span class="kw">match </span>manejo_de_csv::obtener_posicion_header(<span class="kw-2">&amp;</span>valor, <span class="kw-2">&amp;</span>header) {
-
-            <span class="prelude-val">Ok</span>(pos) =&gt; {posiciones.push(pos)}
-    
-            <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-            <span class="kw">return</span>;}, 
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+                <span class="kw">return</span>;
+            }
         };
     }
-    
-    <span class="kw">let </span>matriz = <span class="kw">match </span>ordenar_matriz(matriz, ordenamiento, header){
-        <span class="prelude-val">Ok</span>(matriz) =&gt; {matriz}
 
-        <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-        <span class="kw">return</span>;},
+    <span class="kw">let </span>matriz = <span class="kw">match </span>ordenar_matriz(matriz, ordenamiento, header) {
+        <span class="prelude-val">Ok</span>(matriz) =&gt; matriz,
 
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+            <span class="kw">return</span>;
+        }
     };
 
-
-    <span class="kw">for </span>fila <span class="kw">in </span><span class="kw-2">&amp;</span>matriz{
-        
+    <span class="kw">for </span>fila <span class="kw">in </span><span class="kw-2">&amp;</span>matriz {
         <span class="kw">let </span>fila_ord: Vec&lt;String&gt; = posiciones.iter().map(|<span class="kw-2">&amp;</span>i| fila[i].to_string()).collect();
-        
-        <span class="macro">println!</span>(<span class="string">"{}"</span>, fila_ord.join(<span class="string">","</span>));
-        
-    }
 
+        <span class="macro">println!</span>(<span class="string">"{}"</span>, fila_ord.join(<span class="string">","</span>));
+    }
 }
 
+<span class="doccomment">///Funcion que se encarga de manejar la consulta "SELECT"
+/// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el SELECT
+</span><span class="kw">pub fn </span>select(consulta_sql: String, ruta_del_archivo: String) {
+    <span class="kw">let </span>(nombre_csv, columnas, condiciones) =
+        <span class="kw">match </span>manejo_de_string::separar_datos_select(consulta_sql) {
+            <span class="prelude-val">Ok</span>((nombre_csv, columnas, condiciones)) =&gt; (nombre_csv, columnas, condiciones),
 
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+                <span class="kw">return</span>;
+            }
+        };
 
-<span class="kw">pub fn </span>select(consulta_sql: String, ruta_del_archivo:String){
-
-    <span class="kw">let </span>(nombre_csv,columnas,condiciones) =  <span class="kw">match </span>manejo_de_string::separar_datos_select(consulta_sql) {
-        <span class="prelude-val">Ok</span>((nombre_csv,columnas,condiciones)) =&gt; {(nombre_csv,columnas,condiciones)}
-
-        <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-        <span class="kw">return</span>; },
-        
-    };
- 
-    <span class="kw">let </span>(condiciones,ordenamiento) = manejo_de_string::separar_order(condiciones);
+    <span class="kw">let </span>(condiciones, ordenamiento) = manejo_de_string::separar_order(condiciones);
     <span class="kw">let </span>condiciones_parseadas = condiciones::procesar_condiciones(condiciones);
-    <span class="kw">let </span>ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo,<span class="kw-2">&amp;</span>nombre_csv);
+    <span class="kw">let </span>ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, <span class="kw-2">&amp;</span>nombre_csv);
 
     <span class="kw">let </span>header = <span class="kw">match </span>manejo_de_csv::leer_header(<span class="kw-2">&amp;</span>ruta_csv) {
-        <span class="prelude-val">Ok</span>(header) =&gt; {header}
+        <span class="prelude-val">Ok</span>(header) =&gt; header,
 
-        <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-        <span class="kw">return</span>;}, 
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+            <span class="kw">return</span>;
+        }
     };
 
-    <span class="kw">let </span>matriz = <span class="kw">match </span>condiciones::comparar_con_csv(condiciones_parseadas, ruta_csv, header.clone()) {
-       
-        <span class="prelude-val">Ok</span>(matriz) =&gt; {matriz}
-    
-        <span class="prelude-val">Err</span>(e) =&gt; {<span class="macro">println!</span>(<span class="string">"{}"</span>, e);
-        <span class="kw">return</span>;}, 
-    };
+    <span class="kw">let </span>matriz =
+        <span class="kw">match </span>condiciones::comparar_con_csv(condiciones_parseadas, ruta_csv, header.clone()) {
+            <span class="prelude-val">Ok</span>(matriz) =&gt; matriz,
+
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">println!</span>(<span class="string">"{}"</span>, e);
+                <span class="kw">return</span>;
+            }
+        };
 
     mostrar_select(matriz, columnas, <span class="kw-2">&amp;</span>header, ordenamiento);
-}</code></pre></div></section></main></body></html>
+}
+</code></pre></div></section></main></body></html>
