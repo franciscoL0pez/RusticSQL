@@ -29,7 +29,9 @@ pub fn leer_header(archivo: &String) -> io::Result<Vec<String>> {
         ))
     }
 }
-
+///Funcion par obtener la ruta donde se encuentran nuestros csv
+///#Le pasamos la direccion de la ruta (la que pasamos en la consulta) y el nombre del csv
+///Luego une los strings y devuelve la ruta
 pub fn obtener_ruta_del_csv(ruta: String, nombre_del_csv: &str) -> String {
     let palabras: Vec<&str> = nombre_del_csv.split(" ").collect();
     let nombre_del_csv = palabras[0];
@@ -38,7 +40,8 @@ pub fn obtener_ruta_del_csv(ruta: String, nombre_del_csv: &str) -> String {
 
     ruta_de_csv.to_string()
 }
-
+///Funcion para escribir una linea en un csv
+///Abre el archivo y escribe una linea en el
 pub fn escribir_csv(ruta_csv: String, linea: &str) -> io::Result<()> {
     let mut archivo = OpenOptions::new().append(true).open(ruta_csv)?;
 
@@ -46,7 +49,13 @@ pub fn escribir_csv(ruta_csv: String, linea: &str) -> io::Result<()> {
 
     Ok(())
 }
-
+///Funcion para actualizar las lineas del csv durante la consulta UPDATE
+///#Recibe por parametro el header, ruta del csv, la clave y los campos a actualizar
+///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtenemos la posicion donde se encuentra nuestra clave comparandla con el header
+///-En caso de que esta no se encuentre lanza un error
+///-Itera en el csv y si encontramos que coinciden cambiamos los valores pedidos en la consulta
+///-Escribimos la linea actualiza en nuestro archivo axuliar
+///-Finalmente renombramos a nuestro archivo original como nuestro archivo aux
 pub fn actualizar_csv(
     ruta_csv: String,
     header: Vec<String>,
@@ -89,7 +98,12 @@ pub fn actualizar_csv(
 
     Ok(())
 }
-
+///Funcion para borrar las lineas del csv durante la consulta DELETE
+///#Recibe por parametro el header, ruta del csv y la clave
+///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtiene la posicion donde se encuentra nuestra clave comparandla con el header
+///-En caso de que esta no se encuentre lanza un error
+///-Itera en las lineas del csv y si encontramos que coinciden no los copiamos en nuestro archivo aux
+///-Finalmente renombramos nuestro archivo auxiliar como si fuera el original
 pub fn borrar_lineas_csv(
     ruta_csv: String,
     header: Vec<String>,
@@ -108,7 +122,7 @@ pub fn borrar_lineas_csv(
     for linea in lector.lines() {
         let linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
 
-        //Si el valor de la clave coicide, encontre el elemento que quiero eliminar
+        //Si el valor de la clave coicide, encontre el elemento que quiero eliminar y si es distinto lo elimino
         if clave[1] != linea_csv[indice] {
             let nueva_linea = linea_csv.join(",");
             writeln!(archivo_tem, "{}", nueva_linea)?;

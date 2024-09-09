@@ -27,13 +27,14 @@
 <a href="#27" id="27">27</a>
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
 </pre></div><pre class="rust"><code><span class="comment">//La compilación no debe arrojar warnings del compilador, ni del linter clippy.
 </span><span class="kw">mod </span>condiciones;
 <span class="kw">mod </span>consultas;
 <span class="kw">mod </span>manejo_de_csv;
 <span class="kw">mod </span>manejo_de_string;
 
-<span class="doccomment">///
+<span class="doccomment">///Funcion para manejar las consultas segun lo que llegue por consola
 </span><span class="kw">fn </span>realizar_consulta(consulta_sql: String, ruta: String) {
     <span class="kw">if </span>manejo_de_string::obtener_primera_palabra(<span class="kw-2">&amp;</span>consulta_sql) == <span class="string">"INSERT" </span>{
         consultas::insert(consulta_sql, ruta);
@@ -47,8 +48,9 @@
         <span class="macro">println!</span>(<span class="string">"No existe la consulta escrita!"</span>)
     }
 }
-
-<span class="kw">fn </span>main() {
+<span class="doccomment">///Recibe una consulta por consolta y la recollecta en un vector
+///Luego la divide en dos vectores y llama al manejador de consultas para realizar la consulta
+</span><span class="kw">fn </span>main() {
     <span class="kw">let </span>consulta_completa: Vec&lt;String&gt; = std::env::args().collect();
 
     <span class="kw">let </span>ruta = <span class="kw-2">&amp;</span>consulta_completa[<span class="number">1</span>];

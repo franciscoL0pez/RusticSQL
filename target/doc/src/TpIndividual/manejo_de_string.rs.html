@@ -180,7 +180,60 @@
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
 <a href="#182" id="182">182</a>
-</pre></div><pre class="rust"><code><span class="kw">pub fn </span>obtener_primera_palabra(cadena: <span class="kw-2">&amp;</span>str) -&gt; String {
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+</pre></div><pre class="rust"><code><span class="doccomment">///Funcion para obtener la primera palabra de nuestra consulta
+///#Recibe una cadena por parametro con la consulta completa
+///-Divide la cadena por espacios
+///-Devuelve la primera palabra encontrada
+///-En otro caso devuelve un string vacio (no hice que devuelva un error por que se maneja en el main)
+</span><span class="kw">pub fn </span>obtener_primera_palabra(cadena: <span class="kw-2">&amp;</span>str) -&gt; String {
     <span class="kw">let </span><span class="kw-2">mut </span>iterar_en_cadena = cadena.split_whitespace();
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(palabra) = iterar_en_cadena.next() {
@@ -190,7 +243,12 @@
     }
 }
 
-<span class="kw">pub fn </span>separar_datos(consulta_sql: String) -&gt; (String, String) {
+<span class="doccomment">///Funcion para separar los datos de la consulta INSERT
+///#Recibe por parametro la consulta
+///-Define un vector con dos partes, usando VALUES para separar
+///-Luego separa esas dos partes y opera para dejar valores y direccione_y_columnas como Strings separados
+///-Finalmente retorna los dos Strings
+</span><span class="kw">pub fn </span>separar_datos(consulta_sql: String) -&gt; (String, String) {
     <span class="comment">//Ojo que si no esta values no funciona
     </span><span class="kw">let </span>partes: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = consulta_sql.split(<span class="string">"VALUES"</span>).collect();
 
@@ -206,7 +264,14 @@
     (direccion_y_columnas, valores)
 }
 
-<span class="kw">pub fn </span>separar_datos_update(
+<span class="doccomment">///Funcion para separar los datos de la consulta UPDATE
+///#Recibe por parametro la consulta sql
+///-Divide la consulta en dos partes una con el nombre del csv y otra con los valores
+///-Con la primera cadena que contiene el nombre reemplaza el UPDATE para dejar solo el nombre del csv
+///-Con la segunda cadena que contiene los valores itera sobre dicha cadena y separa la clave de los campos a actualizar
+///-Finalmente retorn un string con el nombre, un vector con los valores y otro con la clave para actualizar
+///-En otro caso devuelve un error
+</span><span class="kw">pub fn </span>separar_datos_update(
     consulta_sql: String,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(String, Vec&lt;String&gt;, Vec&lt;String&gt;), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">let </span>partes: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = consulta_sql.split(<span class="string">"SET"</span>).collect();
@@ -227,7 +292,14 @@
     }
 }
 
-<span class="kw">pub fn </span>separar_datos_delete(consulta_sql: String) -&gt; <span class="prelude-ty">Result</span>&lt;(String, Vec&lt;String&gt;), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+<span class="doccomment">///Funcion para separar los datos de la consulta DELETE
+///#Recibe por parametro la consulta sql
+///-Divide la consulta en dos partes una con el nombre del csv y otra con la clave
+///-Con la primera cadena que contiene el nombre reemplaza el DELETE  y el FROM para dejar solo el nombre del csv
+///-Con la segunda cadena que contiene los valores itera sobre dicha cadena y deja solamente la calve y el valor a actualizar
+///-Finalmente retorn un string con el nombre y un vector clave-valor
+///-En otro caso devuelve un error
+</span><span class="kw">pub fn </span>separar_datos_delete(consulta_sql: String) -&gt; <span class="prelude-ty">Result</span>&lt;(String, Vec&lt;String&gt;), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">match </span>consulta_sql.split(<span class="string">"WHERE"</span>).collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;&gt;() {
         vec <span class="kw">if </span>vec.len() &gt; <span class="number">1 </span>=&gt; {
             <span class="kw">let </span>nombre_del_csv = vec[<span class="number">0</span>]
@@ -250,7 +322,15 @@
     }
 }
 
-<span class="kw">pub fn </span>separar_datos_select(
+<span class="doccomment">///Funcion para separar los datos de la consulta SELECT
+///#Recibe por parametro la consulta sql
+///-Divide la consulta en dos partes una con el nombre + columnas y otra con la clave
+///-Con la primera cadena que contiene el nombre reemplaza el SELECT  y el FROM para dejar solo el nombre del csv
+/// Y en otra variable las columnas del SELECT
+///-Con la segunda cadena que contiene las condiciones quita los ; y recoge todo en un vector.
+///-Finalmente retorn un string con el nombre otro con las columnas y por ultimo un vector con las condiciones
+///-En otro caso devuelve un error
+</span><span class="kw">pub fn </span>separar_datos_select(
     consulta_sql: String,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(String, String, Vec&lt;String&gt;), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">match </span>consulta_sql.split(<span class="string">"WHERE"</span>).collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>str&gt;&gt;() {
@@ -274,7 +354,13 @@
     }
 }
 
-<span class="kw">pub fn </span>separar_order(condiciones: Vec&lt;String&gt;) -&gt; (Vec&lt;String&gt;, Vec&lt;String&gt;) {
+<span class="doccomment">///Funcion para separar el ORDER de las condiciones de un SELECT
+///#Recibe por parametro un vector con las condiciones de la consulta
+///-Si contiene order itera sobre la cadena y quita el order para almacernar el resto de los strings en un vector
+///-Separa el vector en dos strings y luego los mapea en dos vectores que contengan las condiciones y por otro lado el ORDER
+///-Finalmente devuelve dos vectores uno con el criterio de ordenamiento y otro con las condiciones
+///-En caso de no contener ORDER devuelve un vector con las condiciones y uno de ordenamiento vacio.
+</span><span class="kw">pub fn </span>separar_order(condiciones: Vec&lt;String&gt;) -&gt; (Vec&lt;String&gt;, Vec&lt;String&gt;) {
     <span class="kw">let </span>ordenamiento: Vec&lt;String&gt; = Vec::new();
     <span class="kw">let </span>condiciones = condiciones.join(<span class="string">" "</span>);
 
@@ -304,7 +390,17 @@
     }
 }
 
-<span class="kw">pub fn </span>crear_matriz(valores: String) -&gt; Vec&lt;Vec&lt;String&gt;&gt; {
+<span class="doccomment">///Funcion para crear una matriz a la hora de utilizar el INSERT con multiples valores
+///#Recibe por parametro el String con los valores a insertar
+///-Realizar un trim de limitado por parentesis y por las comas
+///-Luego mapea los valores y los pone en un vector
+///-Finalmente los devuelve en formato de matriz
+///#Ejemplo:
+///-Recibo por parametro (1,2,Monitor,22), (1,3,Monitor,0) (mis valores a insertar)
+///-Elimina los parentesis y realiza realiza un split con las comas y va juntando los valores como vector
+///-Luego añade los vectores a un vector de vectores para formar una matriz
+///-Finalmente retorna la matriz creada
+</span><span class="kw">pub fn </span>crear_matriz(valores: String) -&gt; Vec&lt;Vec&lt;String&gt;&gt; {
     <span class="kw">let </span>valores = valores.trim_matches(|c| c == <span class="string">'(' </span>|| c == <span class="string">')'</span>).split(<span class="string">"), ("</span>);
 
     <span class="kw">let </span>valores = valores
@@ -334,8 +430,8 @@
         <span class="kw">let </span>palabra_esperada = <span class="string">"UPDATE"</span>;
         <span class="macro">assert_eq!</span>(primera_palabra, palabra_esperada);
     }
-
-    <span class="attr">#[test]
+    <span class="comment">//El resto de las funciones para separar son muy parecidas
+    </span><span class="attr">#[test]
     </span><span class="kw">fn </span>test06separa_los_datos_del_select_y_los_devuelve() {
         <span class="kw">let </span>consulta = <span class="string">"SELECT id,producto,cantidad FROM ordenes WHERE producto = Teclado AND cantidad &gt;= 1 ORDER BY CANTIDAD ASC "</span>.to_string();
 
