@@ -5,15 +5,28 @@ use crate::manejo_de_string;
 ///Funcion que se encarga de manejar la consulta "INSERT"
 /// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos e insertar los datos
 pub fn insert(consulta_sql: String, ruta_del_archivo: String) {
-    let (direccion_y_columnas, valores) = manejo_de_string::separar_datos(consulta_sql);
+    let (direccion_y_columnas, valores) = match manejo_de_string::separar_datos(consulta_sql) {
+        Ok((direccion_y_columnas, valores)) => (direccion_y_columnas, valores),
 
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
+    };
+    
+    
     let ruta = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &direccion_y_columnas);
     let valores = manejo_de_string::crear_matriz(valores);
 
     for fila in valores.iter() {
         let linea = fila.join(",");
 
-        let _ = manejo_de_csv::escribir_csv(ruta.to_string(), &linea);
+        let _ =  match manejo_de_csv::escribir_csv(ruta.to_string(), &linea){
+            Ok(_) => print!(""),
+            Err(e) => {  println!("{}",e);
+            break; }
+            
+        };
     }
 }
 

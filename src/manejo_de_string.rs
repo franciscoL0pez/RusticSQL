@@ -18,20 +18,30 @@ pub fn obtener_primera_palabra(cadena: &str) -> String {
 ///-Define un vector con dos partes, usando VALUES para separar
 ///-Luego separa esas dos partes y opera para dejar valores y direccione_y_columnas como Strings separados
 ///-Finalmente retorna los dos Strings
-pub fn separar_datos(consulta_sql: String) -> (String, String) {
-    //Ojo que si no esta values no funciona
-    let partes: Vec<&str> = consulta_sql.split("VALUES").collect();
+pub fn separar_datos(consulta_sql: String) -> Result<(String, String), &'static str> {
+    let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
-    let insert = partes[0].trim().to_string();
-    let valores = partes[1].trim_end_matches(';').trim().to_string();
+     if let Some(pos) = palabras.iter().position(|&x| x == "VALUES") { 
 
-    let mut palabras: Vec<&str> = insert.split_whitespace().collect();
+         if palabras[..pos].join(" ").contains("INTO") {
 
-    palabras.drain(0..2); // Quito el insert y el into
+                let insert = palabras[..pos].join(" ").to_string();
+                let valores = palabras[pos + 1..].join(" ").trim_end_matches(';').trim().to_string();
 
-    let direccion_y_columnas = palabras.join(" ");
+                let mut columnas: Vec<&str> = insert.split_whitespace().collect();
+                columnas.drain(0..2); // Quitamos "INSERT" y "INTO"
+    
+                let direccion_y_columnas = columnas.join(" ");
+            
 
-    (direccion_y_columnas, valores)
+
+            Ok((direccion_y_columnas, valores))
+        } else {
+            Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+        }
+    } else {
+        Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+    }
 }
 
 ///Funcion para separar los datos de la consulta UPDATE

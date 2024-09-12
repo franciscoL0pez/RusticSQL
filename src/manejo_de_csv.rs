@@ -37,12 +37,18 @@ pub fn obtener_ruta_del_csv(ruta: String, nombre_del_csv: &str) -> String {
     let nombre_del_csv = palabras[0];
 
     let ruta_de_csv = format!("{}{}{}{}", ruta, "/", nombre_del_csv, ".csv");
-
+   
     ruta_de_csv.to_string()
 }
 ///Funcion para escribir una linea en un csv
 ///Abre el archivo y escribe una linea en el
 pub fn escribir_csv(ruta_csv: String, linea: &str) -> io::Result<()> {
+
+    if !Path::new(&ruta_csv).exists() {
+       
+        return Err(io::Error::new(io::ErrorKind::NotFound, format!("CSV_ERROR:El archivo CSV {} no existe", ruta_csv)));
+    }
+
     let mut archivo = OpenOptions::new().append(true).open(ruta_csv)?;
 
     writeln!(archivo, "{}", linea)?;
