@@ -1,3 +1,5 @@
+use crate::manejo_de_csv::{self};
+
 ///Funcion para obtener la primera palabra de nuestra consulta
 ///#Recibe una cadena por parametro con la consulta completa
 ///-Divide la cadena por espacios
@@ -18,24 +20,36 @@ pub fn obtener_primera_palabra(cadena: &str) -> String {
 ///-Define un vector con dos partes, usando VALUES para separar
 ///-Luego separa esas dos partes y opera para dejar valores y direccione_y_columnas como Strings separados
 ///-Finalmente retorna los dos Strings
-pub fn separar_datos(consulta_sql: String) -> Result<(String, String), &'static str> {
+pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String>), &'static str> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
-     if let Some(pos) = palabras.iter().position(|&x| x == "VALUES") { 
+    if let Some(pos) = palabras.iter().position(|&x| x == "VALUES") {
+        if palabras[..pos].join(" ").contains("INTO") {
+            let insert = palabras[..pos].join(" ").to_string();
+            let valores = palabras[pos + 1..]
+                .join(" ")
+                .trim_end_matches(';')
+                .trim()
+                .replace(" ", "")
+                .to_string();
 
-         if palabras[..pos].join(" ").contains("INTO") {
+            let mut columnas: Vec<&str> = insert.split_whitespace().collect();
+            columnas.drain(0..2); // Quitamos "INSERT" y "INTO"
 
-                let insert = palabras[..pos].join(" ").to_string();
-                let valores = palabras[pos + 1..].join(" ").trim_end_matches(';').trim().to_string();
+            let (nombre_csv, columnas) = columnas.split_at(1);
+            let nombre_csv = nombre_csv[0].to_string();
 
-                let mut columnas: Vec<&str> = insert.split_whitespace().collect();
-                columnas.drain(0..2); // Quitamos "INSERT" y "INTO"
-    
-                let direccion_y_columnas = columnas.join(" ");
-            
+            let columnas: Vec<String> = columnas
+                .join(",")
+                .to_string()
+                .replace("(", "")
+                .replace(")", "")
+                .trim()
+                .split(",")
+                .map(|s| s.to_string())
+                .collect();
 
-
-            Ok((direccion_y_columnas, valores))
+            Ok((nombre_csv, valores, columnas))
         } else {
             Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
         }
@@ -171,27 +185,44 @@ pub fn separar_order(condiciones: Vec<String>) -> (Vec<String>, Vec<String>) {
 }
 
 ///Funcion para crear una matriz a la hora de utilizar el INSERT con multiples valores
-///#Recibe por parametro el String con los valores a insertar
-///-Realizar un trim de limitado por parentesis y por las comas
-///-Luego mapea los valores y los pone en un vector
-///-Finalmente los devuelve en formato de matriz
-///#Ejemplo:
-///-Recibo por parametro (1,2,Monitor,22), (1,3,Monitor,0) (mis valores a insertar)
-///-Elimina los parentesis y realiza realiza un split con las comas y va juntando los valores como vector
-///-Luego añade los vectores a un vector de vectores para formar una matriz
-///-Finalmente retorna la matriz creada
-pub fn crear_matriz(valores: String) -> Vec<Vec<String>> {
-    let valores = valores.trim_matches(|c| c == '(' || c == ')').split("), (");
+///CAMBIAR LA DOC!
+///
 
-    let valores = valores
-        .map(|fila| {
-            fila.split(',') // Divide los valores dentro de cada tupla
-                .map(|v| v.trim().trim_matches('\'').to_string()) // Limpia espacios y comillas
-                .collect::<Vec<String>>()
-        })
-        .collect::<Vec<Vec<String>>>();
+pub fn crear_matriz(
+    valores: String,
+    columnas: Vec<String>,
+    header: &[String],
+) -> Result<Vec<Vec<String>>, String> {
+    let valores = valores.replace(")(", "),("); //Por si los valores vienen sin los parentesiss
+    let valores: Vec<&str> = valores
+        .trim_matches(|c| c == '(' || c == ')')
+        .split("),(")
+        .collect();
 
-    valores
+    let mut matriz: Vec<Vec<String>> = Vec::new();
+
+    for valor in valores {
+        let vec_sin_ordenar: Vec<String> = valor.split(",").map(|s| s.to_string()).collect();
+        let mut vec_ordenado: Vec<String> = Vec::new();
+        vec_ordenado.resize(header.len(), "".to_string());
+
+        for (i, elemento) in vec_sin_ordenar.iter().enumerate() {
+            //Asumo que si me ingresan una columnas menos, lo añado pero en blanco 
+            if i < header.len() && i < columnas.len(){
+                //Si me escribieron cualquier cosa como columna lanzo un error
+                let pos = match manejo_de_csv::obtener_posicion_header(&columnas[i], header) {
+                    Ok(pos) => pos,
+
+                    Err(e) => return Err(e.to_string()),
+                };
+
+                vec_ordenado[pos] = elemento.to_string();
+            }
+        }
+
+        matriz.push(vec_ordenado);
+    }
+    Ok(matriz)
 }
 
 #[cfg(test)]
