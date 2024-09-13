@@ -5,7 +5,7 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 
 //Por ahora leo el archivo, saco el header y atajo el error asi
-pub fn leer_header(archivo: &String) -> io::Result<Vec<String>> {
+pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> io::Result<Vec<String>> {
     let path = Path::new(archivo);
     let file = File::open(path)?;
     let reader = io::BufReader::new(file);
@@ -14,6 +14,10 @@ pub fn leer_header(archivo: &String) -> io::Result<Vec<String>> {
 
     //Leo la primera ya que quiero saber como es la estructura de mi archivo
     //Devuelvo el header o en caso de que no es
+    for _ in 0..linenas_a_ignorar {
+        lineas.next();
+    }
+
     if let Some(header_line) = lineas.next() {
         let header_line = header_line?;
         let header: Vec<String> = header_line
@@ -21,7 +25,7 @@ pub fn leer_header(archivo: &String) -> io::Result<Vec<String>> {
             .map(|s| s.trim().to_string())
             .collect();
 
-        Ok(header) // Devuelve el vector de
+        Ok(header)
     } else {
         Err(io::Error::new(
             io::ErrorKind::NotFound,
@@ -159,7 +163,7 @@ mod tests {
     fn test01leer_header_y_devolverlo() {
         let direccion_del_archivo = "Archivos_Csv/ordenes.csv".to_string();
 
-        let resultado = leer_header(&direccion_del_archivo);
+        let resultado = leer_header(&direccion_del_archivo, 0);
         assert!(resultado.is_ok());
 
         let header = resultado.unwrap();
@@ -170,7 +174,7 @@ mod tests {
     fn test02leemos_el_header_y_ocurre_un_error() {
         let direccion_del_archivo = "".to_string();
 
-        let resultado = leer_header(&direccion_del_archivo);
+        let resultado = leer_header(&direccion_del_archivo, 0);
         assert!(resultado.is_err());
     }
 

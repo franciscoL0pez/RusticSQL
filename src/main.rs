@@ -3,7 +3,7 @@ mod condiciones;
 mod consultas;
 mod manejo_de_csv;
 mod manejo_de_string;
-
+mod tipo_de_datos;
 ///Funcion para manejar las consultas segun lo que llegue por consola
 fn realizar_consulta(consulta_sql: String, ruta: String) {
     if manejo_de_string::obtener_primera_palabra(&consulta_sql) == "INSERT" {

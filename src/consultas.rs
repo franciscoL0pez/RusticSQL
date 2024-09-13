@@ -1,7 +1,6 @@
 use crate::condiciones;
 use crate::manejo_de_csv;
 use crate::manejo_de_string;
-
 ///Funcion que se encarga de manejar la consulta "INSERT"
 /// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos e insertar los datos
 pub fn insert(consulta_sql: String, ruta_del_archivo: String) {
@@ -18,7 +17,7 @@ pub fn insert(consulta_sql: String, ruta_del_archivo: String) {
         };
 
     let ruta = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &direccion_y_columnas);
-    let header = match manejo_de_csv::leer_header(&ruta) {
+    let header = match manejo_de_csv::leer_header(&ruta, 0) {
         Ok(header) => header,
 
         Err(e) => {
@@ -27,7 +26,7 @@ pub fn insert(consulta_sql: String, ruta_del_archivo: String) {
         }
     };
 
-    let matriz = match manejo_de_string::crear_matriz(valores, columnas, &header) {
+    let matriz = match manejo_de_string::crear_matriz(valores, columnas, &header, &ruta) {
         Ok(matriz) => matriz,
 
         Err(e) => {
@@ -46,7 +45,6 @@ pub fn insert(consulta_sql: String, ruta_del_archivo: String) {
             }
         };
     }
-    
 }
 
 ///Funcion que se encarga de manejar la consulta "UPDATE"
@@ -66,7 +64,7 @@ pub fn update(consulta_sql: String, ruta_del_archivo: String) {
 
     let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &nombre_del_csv);
 
-    let header = match manejo_de_csv::leer_header(&ruta_csv) {
+    let header = match manejo_de_csv::leer_header(&ruta_csv, 0) {
         Ok(header) => header,
 
         Err(e) => {
@@ -93,7 +91,7 @@ pub fn delete(consulta_sql: String, ruta_del_archivo: String) {
 
     let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &nombre_del_csv);
 
-    let header = match manejo_de_csv::leer_header(&ruta_csv) {
+    let header = match manejo_de_csv::leer_header(&ruta_csv, 0) {
         Ok(header) => header,
 
         Err(e) => {
@@ -192,7 +190,7 @@ pub fn select(consulta_sql: String, ruta_del_archivo: String) {
     let condiciones_parseadas = condiciones::procesar_condiciones(condiciones);
     let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &nombre_csv);
 
-    let header = match manejo_de_csv::leer_header(&ruta_csv) {
+    let header = match manejo_de_csv::leer_header(&ruta_csv, 0) {
         Ok(header) => header,
 
         Err(e) => {

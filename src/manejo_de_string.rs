@@ -1,4 +1,7 @@
-use crate::manejo_de_csv::{self};
+use crate::{
+    manejo_de_csv::{self},
+    tipo_de_datos,
+};
 
 ///Funcion para obtener la primera palabra de nuestra consulta
 ///#Recibe una cadena por parametro con la consulta completa
@@ -192,6 +195,7 @@ pub fn crear_matriz(
     valores: String,
     columnas: Vec<String>,
     header: &[String],
+    ruta_csv: &String,
 ) -> Result<Vec<Vec<String>>, String> {
     let valores = valores.replace(")(", "),("); //Por si los valores vienen sin los parentesiss
     let valores: Vec<&str> = valores
@@ -207,8 +211,8 @@ pub fn crear_matriz(
         vec_ordenado.resize(header.len(), "".to_string());
 
         for (i, elemento) in vec_sin_ordenar.iter().enumerate() {
-            //Asumo que si me ingresan una columnas menos, lo añado pero en blanco 
-            if i < header.len() && i < columnas.len(){
+            //Asumo que si me ingresan una columnas menos, lo añado pero en blanco
+            if i < header.len() && i < columnas.len() {
                 //Si me escribieron cualquier cosa como columna lanzo un error
                 let pos = match manejo_de_csv::obtener_posicion_header(&columnas[i], header) {
                     Ok(pos) => pos,
@@ -216,7 +220,13 @@ pub fn crear_matriz(
                     Err(e) => return Err(e.to_string()),
                 };
 
-                vec_ordenado[pos] = elemento.to_string();
+                let elemento = match tipo_de_datos::comprobar_dato(elemento, &ruta_csv, pos) {
+                    Ok(elemento) => elemento,
+
+                    Err(e) => return Err(e.to_string()),
+                };
+
+                vec_ordenado[pos] = elemento;
             }
         }
 
