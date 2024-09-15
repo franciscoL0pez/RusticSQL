@@ -1,5 +1,6 @@
 use crate::condiciones;
 use crate::tipo_de_datos;
+use std::fs::remove_file;
 use std::fs::rename;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -69,6 +70,7 @@ pub fn cambiar_valores(
     ruta_csv: &String,
 ) -> Result<String, String> {
     let mut linea = linea;
+
     let pos = match obtener_posicion_header(&campos_a_cambiar[0], header) {
         Ok(pos) => pos,
 
@@ -77,10 +79,12 @@ pub fn cambiar_valores(
         }
     };
 
-    let valor = match tipo_de_datos::comprobar_dato(&campos_a_cambiar[2], ruta_csv, pos) {
-        Ok(valor) => valor,
 
-        Err(e) => return Err(e.to_string()),
+    let valor = match tipo_de_datos::comprobar_dato(&campos_a_cambiar[2], ruta_csv, pos) {
+        Ok(valor) => {valor},
+        
+
+        Err(e) => {return Err(e.to_string())},
     };
 
     linea[pos] = valor;
@@ -109,7 +113,6 @@ pub fn actualizar_csv(
     let _ = File::create(&ruta_archivo_temporal)?;
 
     let condiciones_parseadas = condiciones::procesar_condiciones(claves);
-    
 
     for linea in lector.lines() {
         let linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
@@ -119,19 +122,24 @@ pub fn actualizar_csv(
                 Ok(segundo_resultado) => segundo_resultado,
 
                 Err(e) => {
+                    let _ = remove_file(&ruta_archivo_temporal);
                     return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
                 }
             };
 
-        if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
-            let nueva_linea = cambiar_valores(linea_csv, &campos_a_cambiar, &header, &ruta_csv)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{}", e)))?;
-
-            escribir_csv(&ruta_archivo_temporal, &nueva_linea)?
-        } else {
-            escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
+            if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
+                let nueva_linea = cambiar_valores(linea_csv, &campos_a_cambiar, &header, &ruta_csv)
+                    .map_err(|e|{
+                        println!("{}",e);
+                        let _ = remove_file(&ruta_archivo_temporal);
+                        io::Error::new(io::ErrorKind::Other, format!("{}", e))
+                        })?;
+    
+                escribir_csv(&ruta_archivo_temporal, &nueva_linea)?
+            } else {
+                escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
+            }
         }
-    }
 
     let _ = rename(&ruta_archivo_temporal, ruta_csv);
     Ok(())

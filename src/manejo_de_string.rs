@@ -34,6 +34,7 @@ pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String
                 .trim_end_matches(';')
                 .trim()
                 .replace(" ", "")
+                .replace("'", "")
                 .to_string();
 
             let mut columnas: Vec<&str> = insert.split_whitespace().collect();
@@ -78,6 +79,7 @@ pub fn separar_datos_update(
         let nombre_del_csv = partes[0]
             .trim()
             .replace("UPDATE", "")
+            .replace("'","")
             .replace(" ", "")
             .to_string();
         let valores = partes[1].trim().trim_end_matches(';');
@@ -86,16 +88,16 @@ pub fn separar_datos_update(
             if let Some((campos_a_actualizar, clave)) = valores.split_once("WHERE") {
                 let campos_set: Vec<String> = campos_a_actualizar
                     .split_whitespace()
-                    .map(|s| s.to_string())
+                    .map(|s| s.to_string().replace("'",""))
                     .collect();
                 let claves: Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
-
+           
                 Ok((nombre_del_csv, campos_set, claves))
             } else {
                 Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
             }
         } else {
-            Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+            Err("INVALID_SYNTAX: Error de sintaxis en la consulta")
         }
     } else {
         Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
