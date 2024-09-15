@@ -112,26 +112,23 @@ pub fn separar_datos_update(
 ///-Finalmente retorn un string con el nombre y un vector clave-valor
 ///-En otro caso devuelve un error
 pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>), &'static str> {
-    match consulta_sql.split("WHERE").collect::<Vec<&str>>() {
-        vec if vec.len() > 1 => {
-            let nombre_del_csv = vec[0]
-                .replace("DELETE", "")
-                .replace("FROM", "")
-                .trim()
-                .to_string();
+    let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
-            let clave = vec[1]
-                .replace("=", "")
-                .replace(",", "")
-                .trim_end_matches(";")
-                .to_string();
-            let clave: Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
+    if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
+        let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
 
-            Ok((nombre_del_csv, clave))
-        }
+        let nombre_csv = partes[0].replace("DELETE","").replace("FROM","").trim().replace(" ","");
+        let condiciones = partes[1].trim_end_matches(';').split_whitespace()
+        .map(|s| s.to_string().replace("'",""))
+        .collect();
 
-        _ => Err("INVALID_SYNTAX: Error de sintaxis en la consulta "),
+        Ok((nombre_csv,condiciones))
+
     }
+    else {
+        Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+    }
+
 }
 
 ///Funcion para separar los datos de la consulta SELECT

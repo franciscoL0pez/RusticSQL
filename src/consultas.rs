@@ -81,8 +81,8 @@ pub fn update(consulta_sql: String, ruta_del_archivo: String) {
 ///Funcion que se encarga de manejar la consulta "UPDATE"
 /// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el delete
 pub fn delete(consulta_sql: String, ruta_del_archivo: String) {
-    let (nombre_del_csv, clave) = match manejo_de_string::separar_datos_delete(consulta_sql) {
-        Ok((nombre_del_csv, clave)) => (nombre_del_csv, clave),
+    let (nombre_del_csv, condiciones) = match manejo_de_string::separar_datos_delete(consulta_sql) {
+        Ok((nombre_del_csv, condiciones)) => (nombre_del_csv, condiciones),
 
         Err(e) => {
             println!("{}", e);
@@ -90,8 +90,10 @@ pub fn delete(consulta_sql: String, ruta_del_archivo: String) {
         }
     };
 
-    let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &nombre_del_csv);
 
+    
+    let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &nombre_del_csv);
+    
     let header = match manejo_de_csv::leer_header(&ruta_csv, 0) {
         Ok(header) => header,
 
@@ -100,8 +102,9 @@ pub fn delete(consulta_sql: String, ruta_del_archivo: String) {
             return;
         }
     };
+    
+    let _ = manejo_de_csv::borrar_lineas_csv(ruta_csv, header, condiciones);
 
-    let _ = manejo_de_csv::borrar_lineas_csv(ruta_csv, header, clave);
 }
 
 ///Funcion para ordenar las lineas cuando se hace un SELECT

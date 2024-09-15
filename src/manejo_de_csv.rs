@@ -154,31 +154,38 @@ pub fn actualizar_csv(
 pub fn borrar_lineas_csv(
     ruta_csv: String,
     header: Vec<String>,
-    clave: Vec<String>,
+    condiciones: Vec<String>,
 ) -> io::Result<()> {
     let archivo = File::open(&ruta_csv)?;
     let lector = BufReader::new(archivo);
-    let archivo_temporal = "auxiliar.csv";
-    let mut archivo_tem = File::create(archivo_temporal)?;
-
-    let indice = obtener_posicion_header(&clave[0], &header).map_err(|e| {
-        eprintln!("{}", e);
-        io::Error::new(io::ErrorKind::InvalidInput, e)
-    })?;
-
+    let ruta_archivo_temporal = "auxiliar.csv";
+    let _archivo_tem = File::create(ruta_archivo_temporal)?;
+    
+    let condiciones_parseadas = condiciones::procesar_condiciones(condiciones);
+    print!("{:?}",condiciones_parseadas);
     for linea in lector.lines() {
         let linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
 
-        //Si el valor de la clave coicide, encontre el elemento que quiero eliminar y si es distinto lo elimino
-        if clave[1] != linea_csv[indice] {
-            let nueva_linea = linea_csv.join(",");
-            writeln!(archivo_tem, "{}", nueva_linea)?;
-        }
-    }
+        let cumple_condiciones = match condiciones::comparar_op_logico(&condiciones_parseadas, &linea_csv, &header) {
+            Ok(segundo_resultado) => segundo_resultado,
 
-    let _ = rename(archivo_temporal, ruta_csv);
+            Err(e) => {
+                let _ = remove_file(&ruta_archivo_temporal);
+                return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
+            }
+        };
+        //Si cumple las condicioens no escribo en el archivo ya que la quiero borrar
+        if cumple_condiciones  && &linea_csv.join(",") != &header.join(","){
+    
+            } else {
+                escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
+            }
+        }
+
+        let _ = rename(ruta_archivo_temporal, ruta_csv);
     Ok(())
 }
+
 
 pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, String> {
     let pos = header.iter().position(|s| s == clave);

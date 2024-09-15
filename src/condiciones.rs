@@ -162,6 +162,8 @@ pub fn comparar_op_logico(
             OpLogico::And => resultado = resultado && segundo_resultado,
             OpLogico::Or => resultado = resultado || segundo_resultado,
             OpLogico::Not => resultado = resultado && !segundo_resultado,
+
+           
         }
     }
 
