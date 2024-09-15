@@ -1,6 +1,7 @@
 use crate::condiciones;
 use crate::manejo_de_csv;
 use crate::manejo_de_string;
+
 ///Funcion que se encarga de manejar la consulta "INSERT"
 /// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos e insertar los datos
 pub fn insert(consulta_sql: String, ruta_del_archivo: String) {
@@ -37,7 +38,7 @@ pub fn insert(consulta_sql: String, ruta_del_archivo: String) {
     for fila in matriz.iter() {
         let linea = fila.join(",");
 
-        match manejo_de_csv::escribir_csv(ruta.to_string(), &linea) {
+        match manejo_de_csv::escribir_csv(&ruta.to_string(), &linea) {
             Ok(_) => print!(""),
             Err(e) => {
                 println!("{}", e);

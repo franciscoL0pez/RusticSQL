@@ -71,21 +71,34 @@ pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String
 pub fn separar_datos_update(
     consulta_sql: String,
 ) -> Result<(String, Vec<String>, Vec<String>), &'static str> {
-    let partes: Vec<&str> = consulta_sql.split("SET").collect();
-    let nombre_del_csv = partes[0].trim().replace("UPDATE", "").replace(" ", "");
-    let valores = partes[1].trim().trim_end_matches(';');
+    let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
-    match valores.split_once("WHERE") {
-        Some((campos, clave)) => {
-            let campos = campos.replace("=", "").replace(",", "");
-            let campos: Vec<String> = campos.split_whitespace().map(|s| s.to_string()).collect();
+    if let Some(_) = palabras.iter().position(|&x| x == "SET") {
+        let partes: Vec<&str> = consulta_sql.split("SET").collect();
+        let nombre_del_csv = partes[0]
+            .trim()
+            .replace("UPDATE", "")
+            .replace(" ", "")
+            .to_string();
+        let valores = partes[1].trim().trim_end_matches(';');
 
-            let clave = clave.replace("=", "").replace(",", "");
-            let clave: Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
+        if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
+            if let Some((campos_a_actualizar, clave)) = valores.split_once("WHERE") {
+                let campos_set: Vec<String> = campos_a_actualizar
+                    .split_whitespace()
+                    .map(|s| s.to_string())
+                    .collect();
+                let claves: Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
 
-            Ok((nombre_del_csv, campos, clave))
+                Ok((nombre_del_csv, campos_set, claves))
+            } else {
+                Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+            }
+        } else {
+            Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
         }
-        None => Err("INVALID_SYNTAX: Error de sintaxis en la consulta "),
+    } else {
+        Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
     }
 }
 

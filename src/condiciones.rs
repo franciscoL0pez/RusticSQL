@@ -82,7 +82,7 @@ pub fn procesar_condiciones(condiciones: Vec<String>) -> Vec<Condicion> {
         let valor = condiciones[i + 2].to_string();
 
         if i > 1 && condiciones.len() > i {
-            if let Some(op) = obtener_op_logico(&condiciones[i - 1]) {
+            if let Some(op) = obtener_op_logico(&condiciones[i - 1].to_uppercase()) {
                 op_logico = op;
             }
         }

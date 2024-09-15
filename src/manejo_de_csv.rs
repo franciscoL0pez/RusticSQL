@@ -1,9 +1,10 @@
+use crate::condiciones;
+use crate::tipo_de_datos;
 use std::fs::rename;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
-
 //Por ahora leo el archivo, saco el header y atajo el error asi
 pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> io::Result<Vec<String>> {
     let path = Path::new(archivo);
@@ -46,7 +47,7 @@ pub fn obtener_ruta_del_csv(ruta: String, nombre_del_csv: &str) -> String {
 }
 ///Funcion para escribir una linea en un csv
 ///Abre el archivo y escribe una linea en el
-pub fn escribir_csv(ruta_csv: String, linea: &str) -> io::Result<()> {
+pub fn escribir_csv(ruta_csv: &str, linea: &str) -> io::Result<()> {
     if !Path::new(&ruta_csv).exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
@@ -60,6 +61,35 @@ pub fn escribir_csv(ruta_csv: String, linea: &str) -> io::Result<()> {
 
     Ok(())
 }
+
+pub fn cambiar_valores(
+    linea: Vec<String>,
+    campos_a_cambiar: &[String],
+    header: &[String],
+    ruta_csv: &String,
+) -> Result<String, String> {
+    let mut linea = linea;
+    let pos = match obtener_posicion_header(&campos_a_cambiar[0], header) {
+        Ok(pos) => pos,
+
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    let valor = match tipo_de_datos::comprobar_dato(&campos_a_cambiar[2], ruta_csv, pos) {
+        Ok(valor) => valor,
+
+        Err(e) => return Err(e.to_string()),
+    };
+
+    linea[pos] = valor;
+
+    let nueva_linea = linea.join(",");
+
+    Ok(nueva_linea)
+}
+
 ///Funcion para actualizar las lineas del csv durante la consulta UPDATE
 ///#Recibe por parametro el header, ruta del csv, la clave y los campos a actualizar
 ///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtenemos la posicion donde se encuentra nuestra clave comparandla con el header
@@ -70,45 +100,43 @@ pub fn escribir_csv(ruta_csv: String, linea: &str) -> io::Result<()> {
 pub fn actualizar_csv(
     ruta_csv: String,
     header: Vec<String>,
-    campos: Vec<String>,
-    clave: Vec<String>,
+    campos_a_cambiar: Vec<String>,
+    claves: Vec<String>,
 ) -> io::Result<()> {
     let archivo = File::open(&ruta_csv)?;
     let lector = BufReader::new(archivo);
-    let archivo_temporal = "auxiliar.csv";
-    let mut archivo_tem = File::create(archivo_temporal)?;
+    let ruta_archivo_temporal = "auxiliar.csv".to_string();
+    let _ = File::create(&ruta_archivo_temporal)?;
 
-    let indice = obtener_posicion_header(&clave[0], &header).map_err(|e| {
-        eprintln!("{}", e);
-        io::Error::new(io::ErrorKind::InvalidInput, e)
-    })?;
+    let condiciones_parseadas = condiciones::procesar_condiciones(claves);
+    
 
-    //Quiero encontrar la clave en alguna linea y si la encuentro la reemplazo por los valores que me dieron
     for linea in lector.lines() {
-        let mut linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
+        let linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
 
-        //Si el valor de la clave coicide, encontre el elemento que quiero cambiar
-        if clave[1] == linea_csv[indice] {
-            for (i, valor_para_act) in campos.iter().enumerate() {
-                for (j, val_header) in header.iter().enumerate() {
-                    if valor_para_act == val_header {
-                        linea_csv[j] = campos[i + 1].to_string();
-                    }
+        let cumple_condiciones =
+            match condiciones::comparar_op_logico(&condiciones_parseadas, &linea_csv, &header) {
+                Ok(segundo_resultado) => segundo_resultado,
+
+                Err(e) => {
+                    return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
                 }
-            }
+            };
 
-            let nueva_linea = linea_csv.join(",");
-            writeln!(archivo_tem, "{}", nueva_linea)?;
+        if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
+            let nueva_linea = cambiar_valores(linea_csv, &campos_a_cambiar, &header, &ruta_csv)
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{}", e)))?;
+
+            escribir_csv(&ruta_archivo_temporal, &nueva_linea)?
         } else {
-            let linea = linea_csv.join(",");
-            let _ = writeln!(archivo_tem, "{}", linea);
+            escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
         }
     }
 
-    let _ = rename(archivo_temporal, ruta_csv);
-
+    let _ = rename(&ruta_archivo_temporal, ruta_csv);
     Ok(())
 }
+
 ///Funcion para borrar las lineas del csv durante la consulta DELETE
 ///#Recibe por parametro el header, ruta del csv y la clave
 ///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtiene la posicion donde se encuentra nuestra clave comparandla con el header
