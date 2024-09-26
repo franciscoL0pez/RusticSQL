@@ -228,8 +228,8 @@ mod tests {
         let mut archivo = File::create(&ruta_csv).unwrap();
 
         let header = vec!["id".to_string(), "nombre".to_string(), "edad".to_string()];
-        let campos = vec!["edad".to_string(), "40".to_string()];
-        let clave = vec!["id".to_string(), "1".to_string()];
+        let campos = vec!["edad".to_string(),"=".to_string(), "40".to_string()];
+        let clave = vec!["id".to_string(),"=".to_string() ,"1".to_string()];
 
         //Le pongo algunos datos para el test
         let datos_in = "id,nombre,edad\n1,Juan,25\n2,Maria,30\n";
@@ -259,7 +259,7 @@ mod tests {
         let mut archivo = File::create(&ruta_csv).unwrap();
 
         let header = vec!["id".to_string(), "nombre".to_string(), "edad".to_string()];
-        let clave = vec!["id".to_string(), "1".to_string()];
+        let clave = vec!["id".to_string(),"=".to_string() ,"1".to_string()];
 
         //Le pongo algunos datos para el test
         let datos_in = "id,nombre,edad\n1,Juan,25\n2,Maria,30\n";

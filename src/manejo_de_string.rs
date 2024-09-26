@@ -142,24 +142,36 @@ pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>
 pub fn separar_datos_select(
     consulta_sql: String,
 ) -> Result<(String, String, Vec<String>), &'static str> {
-    match consulta_sql.split("WHERE").collect::<Vec<&str>>() {
-        vec if vec[0].contains("FROM") => {
-            let nombre_csv_y_columnas = vec[0].replace("SELECT", "").trim().to_string();
+    let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
+    if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
+        let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
+
+        if let Some(_) = partes.iter().position(|&x| x == "FROM") {
+
+            let nombre_csv_y_columnas = partes[0].replace("SELECT", "").trim().to_string();
             let nombre_csv_y_columnas: Vec<&str> = nombre_csv_y_columnas.split("FROM").collect();
 
             let nombre_csv = nombre_csv_y_columnas[1].trim().to_string();
-            let columnas = nombre_csv_y_columnas[0].trim().to_string();
+            let columnas = nombre_csv_y_columnas[0].trim().replace(" ","").to_string();
+    
 
-            let condiciones = vec[1].replace(";", "").trim().to_string();
+            let condiciones = partes[1].replace(";", "").trim().to_string();
             let condiciones: Vec<String> = condiciones
                 .split_whitespace()
                 .map(|s| s.to_string())
                 .collect();
 
+      
             Ok((nombre_csv, columnas, condiciones))
         }
+        else {
+            Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+        }
 
-        _ => Err("INVALID_SYNTAX: Error de sintaxis en la consulta"),
+        
+    }
+    else {
+        Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
     }
 }
 
@@ -269,6 +281,7 @@ mod test {
         let consulta = "SELECT id,producto,cantidad FROM ordenes WHERE producto = Teclado AND cantidad >= 1 ORDER BY CANTIDAD ASC ".to_string();
 
         let (nombre_csv, columnas, condiciones) = separar_datos_select(consulta).unwrap();
+  
 
         let nombre_csv_esperado = "ordenes";
         let columnas_eperadas = "id,producto,cantidad";
@@ -285,7 +298,7 @@ mod test {
             "CANTIDAD".to_string(),
             "ASC".to_string(),
         ];
-
+     
         assert_eq!(nombre_csv, nombre_csv_esperado);
         assert_eq!(columnas, columnas_eperadas);
         assert_eq!(condiciones, condiciones_esperadas);

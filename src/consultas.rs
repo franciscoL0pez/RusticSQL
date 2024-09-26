@@ -190,7 +190,9 @@ pub fn select(consulta_sql: String, ruta_del_archivo: String) {
             }
         };
 
+    
     let (condiciones, ordenamiento) = manejo_de_string::separar_order(condiciones);
+    
     let condiciones_parseadas = condiciones::procesar_condiciones(condiciones);
     let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &nombre_csv);
 
@@ -214,4 +216,5 @@ pub fn select(consulta_sql: String, ruta_del_archivo: String) {
         };
 
     mostrar_select(matriz, columnas, &header, ordenamiento);
+    
 }
