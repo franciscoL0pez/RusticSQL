@@ -185,12 +185,13 @@ pub fn select(consulta_sql: String, ruta_del_archivo: String) {
             Ok((nombre_csv, columnas, condiciones)) => (nombre_csv, columnas, condiciones),
 
             Err(e) => {
+              
                 println!("{}", e);
                 return;
             }
         };
 
-    
+     
     let (condiciones, ordenamiento) = manejo_de_string::separar_order(condiciones);
     
     let condiciones_parseadas = condiciones::procesar_condiciones(condiciones);

@@ -1,6 +1,5 @@
 use crate::{
-    manejo_de_csv::{self},
-    tipo_de_datos,
+   manejo_de_csv::{self}, tipo_de_datos
 };
 
 ///Funcion para obtener la primera palabra de nuestra consulta
@@ -144,27 +143,34 @@ pub fn separar_datos_select(
 ) -> Result<(String, String, Vec<String>), &'static str> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
     if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
+       
+        if let Some(_) = palabras.iter().position(|&x| x == "FROM") {
         let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
 
-        if let Some(_) = partes.iter().position(|&x| x == "FROM") {
-
-            let nombre_csv_y_columnas = partes[0].replace("SELECT", "").trim().to_string();
+            let nombre_csv_y_columnas = partes[0]
+                .trim()
+                .replace("SELECT", "")
+                .replace("'","")
+                .replace(" ", "")
+                .to_string();
+          
             let nombre_csv_y_columnas: Vec<&str> = nombre_csv_y_columnas.split("FROM").collect();
+           
+            let nombre_csv = nombre_csv_y_columnas[1].trim().replace(" ","").to_string();
+            let columnas = nombre_csv_y_columnas[0].trim().replace(" ","").replace("(", "")
+            .replace(")", "").to_string();
+  
 
-            let nombre_csv = nombre_csv_y_columnas[1].trim().to_string();
-            let columnas = nombre_csv_y_columnas[0].trim().replace(" ","").to_string();
-    
-
-            let condiciones = partes[1].replace(";", "").trim().to_string();
+            let condiciones = partes[1].trim_end_matches(';');
             let condiciones: Vec<String> = condiciones
                 .split_whitespace()
                 .map(|s| s.to_string())
                 .collect();
-
-      
+ 
             Ok((nombre_csv, columnas, condiciones))
         }
         else {
+            
             Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
         }
 
