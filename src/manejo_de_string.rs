@@ -1,5 +1,6 @@
 use crate::{
-   manejo_de_csv::{self}, tipo_de_datos
+    manejo_de_csv::{self},
+    tipo_de_datos,
 };
 
 ///Funcion para obtener la primera palabra de nuestra consulta
@@ -78,7 +79,7 @@ pub fn separar_datos_update(
         let nombre_del_csv = partes[0]
             .trim()
             .replace("UPDATE", "")
-            .replace("'","")
+            .replace("'", "")
             .replace(" ", "")
             .to_string();
         let valores = partes[1].trim().trim_end_matches(';');
@@ -87,10 +88,10 @@ pub fn separar_datos_update(
             if let Some((campos_a_actualizar, clave)) = valores.split_once("WHERE") {
                 let campos_set: Vec<String> = campos_a_actualizar
                     .split_whitespace()
-                    .map(|s| s.to_string().replace("'",""))
+                    .map(|s| s.to_string().replace("'", ""))
                     .collect();
                 let claves: Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
-           
+
                 Ok((nombre_del_csv, campos_set, claves))
             } else {
                 Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
@@ -116,18 +117,21 @@ pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>
     if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
         let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
 
-        let nombre_csv = partes[0].replace("DELETE","").replace("FROM","").trim().replace(" ","");
-        let condiciones = partes[1].trim_end_matches(';').split_whitespace()
-        .map(|s| s.to_string().replace("'",""))
-        .collect();
+        let nombre_csv = partes[0]
+            .replace("DELETE", "")
+            .replace("FROM", "")
+            .trim()
+            .replace(" ", "");
+        let condiciones = partes[1]
+            .trim_end_matches(';')
+            .split_whitespace()
+            .map(|s| s.to_string().replace("'", ""))
+            .collect();
 
-        Ok((nombre_csv,condiciones))
-
-    }
-    else {
+        Ok((nombre_csv, condiciones))
+    } else {
         Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
     }
-
 }
 
 ///Funcion para separar los datos de la consulta SELECT
@@ -143,40 +147,37 @@ pub fn separar_datos_select(
 ) -> Result<(String, String, Vec<String>), &'static str> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
     if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
-       
         if let Some(_) = palabras.iter().position(|&x| x == "FROM") {
-        let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
+            let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
 
             let nombre_csv_y_columnas = partes[0]
                 .trim()
                 .replace("SELECT", "")
-                .replace("'","")
+                .replace("'", "")
                 .replace(" ", "")
                 .to_string();
-          
+
             let nombre_csv_y_columnas: Vec<&str> = nombre_csv_y_columnas.split("FROM").collect();
-           
-            let nombre_csv = nombre_csv_y_columnas[1].trim().replace(" ","").to_string();
-            let columnas = nombre_csv_y_columnas[0].trim().replace(" ","").replace("(", "")
-            .replace(")", "").to_string();
-  
+
+            let nombre_csv = nombre_csv_y_columnas[1].trim().replace(" ", "").to_string();
+            let columnas = nombre_csv_y_columnas[0]
+                .trim()
+                .replace(" ", "")
+                .replace("(", "")
+                .replace(")", "")
+                .to_string();
 
             let condiciones = partes[1].trim_end_matches(';');
             let condiciones: Vec<String> = condiciones
                 .split_whitespace()
                 .map(|s| s.to_string())
                 .collect();
- 
+
             Ok((nombre_csv, columnas, condiciones))
-        }
-        else {
-            
+        } else {
             Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
         }
-
-        
-    }
-    else {
+    } else {
         Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
     }
 }
@@ -287,7 +288,6 @@ mod test {
         let consulta = "SELECT id,producto,cantidad FROM ordenes WHERE producto = Teclado AND cantidad >= 1 ORDER BY CANTIDAD ASC ".to_string();
 
         let (nombre_csv, columnas, condiciones) = separar_datos_select(consulta).unwrap();
-  
 
         let nombre_csv_esperado = "ordenes";
         let columnas_eperadas = "id,producto,cantidad";
@@ -304,7 +304,7 @@ mod test {
             "CANTIDAD".to_string(),
             "ASC".to_string(),
         ];
-     
+
         assert_eq!(nombre_csv, nombre_csv_esperado);
         assert_eq!(columnas, columnas_eperadas);
         assert_eq!(condiciones, condiciones_esperadas);

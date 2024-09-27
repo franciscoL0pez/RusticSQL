@@ -32,27 +32,26 @@ pub struct Condicion {
 }
 
 //Funcion para obtener el tipo de operador logico
-pub fn obtener_op_logico(op: &str) -> Option<OpLogico> {
+pub fn obtener_op_logico(op: &str) -> Result<OpLogico, String> {
     match op {
-        "AND" => Some(OpLogico::And),
-        "OR" => Some(OpLogico::Or),
-        "NOT" => Some(OpLogico::Not),
+        "AND" => Ok(OpLogico::And),
+        "OR" => Ok(OpLogico::Or),
+        "NOT" => Ok(OpLogico::Not),
 
-        _ => Some(OpLogico::And),
+        _ => Err("INVALID_SYNTAX: Operador logico inexistente en la consulta".to_string()),
     }
 }
-
 ///Funcion para obtener el tipo de operador
-pub fn obtener_op(op: &str) -> Option<Operador> {
+pub fn obtener_op(op: &str) -> Result<Operador, String> {
     match op {
-        "=" => Some(Operador::Igual),
-        "<" => Some(Operador::Menor),
-        ">" => Some(Operador::Mayor),
-        "!=" => Some(Operador::Distinto),
-        "<=" => Some(Operador::MenorIgual),
-        ">=" => Some(Operador::MayorIgual),
+        "=" => Ok(Operador::Igual),
+        "<" => Ok(Operador::Menor),
+        ">" => Ok(Operador::Mayor),
+        "!=" => Ok(Operador::Distinto),
+        "<=" => Ok(Operador::MenorIgual),
+        ">=" => Ok(Operador::MayorIgual),
 
-        _ => None,
+        _ => Err("INVALID_SYNTAX: Operador  inexistente en la consulta".to_string()),
     }
 }
 
@@ -64,7 +63,7 @@ pub fn obtener_op(op: &str) -> Option<Operador> {
 /// -Repite e itera hasta llegar al final de la lista
 /// -Finalmente retorna el nuevo vector con las condiciones "parseadas"
 
-pub fn procesar_condiciones(condiciones: Vec<String>) -> Vec<Condicion> {
+pub fn procesar_condiciones(condiciones: Vec<String>) -> Result<Vec<Condicion>, String> {
     let mut condiciones_parseadas: Vec<Condicion> = Vec::new();
     let mut i = 0;
 
@@ -73,20 +72,22 @@ pub fn procesar_condiciones(condiciones: Vec<String>) -> Vec<Condicion> {
 
         let columna = condiciones[i].to_string();
         let operador = match obtener_op(&condiciones[i + 1]) {
-            Some(operador) => operador,
-            None => {
-                eprintln!("Operador inválido en la condición: {}", condiciones[i + 1]);
-                break;
+            Ok(operador) => operador,
+            Err(e) => {
+                return Err(e.to_string());
             }
         };
         let valor = condiciones[i + 2].to_string();
 
         if i > 1 && condiciones.len() > i {
-            if let Some(op) = obtener_op_logico(&condiciones[i - 1].to_uppercase()) {
-                op_logico = op;
-            }
-        }
+            match obtener_op_logico(&condiciones[i - 1].to_uppercase()) {
+                Ok(op) => op_logico = op,
 
+                Err(e) => {
+                    return Err(e.to_string());
+                }
+            };
+        }
         i += 4;
         let condicion = Condicion {
             columna,
@@ -97,7 +98,7 @@ pub fn procesar_condiciones(condiciones: Vec<String>) -> Vec<Condicion> {
 
         condiciones_parseadas.push(condicion);
     }
-    condiciones_parseadas
+    Ok(condiciones_parseadas)
 }
 
 ///Funcion para comparar las operacion que tiene cada condicion
@@ -145,7 +146,7 @@ pub fn comparar_op_logico(
         let pos = match manejo_de_csv::obtener_posicion_header(&condicion.columna, header) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("{}", e); // Error al leer el header
+                eprintln!("{}", e);
                 break;
             }
         };
@@ -162,8 +163,6 @@ pub fn comparar_op_logico(
             OpLogico::And => resultado = resultado && segundo_resultado,
             OpLogico::Or => resultado = resultado || segundo_resultado,
             OpLogico::Not => resultado = resultado && !segundo_resultado,
-
-           
         }
     }
 

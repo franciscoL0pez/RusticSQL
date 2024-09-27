@@ -79,12 +79,10 @@ pub fn cambiar_valores(
         }
     };
 
-
     let valor = match tipo_de_datos::comprobar_dato(&campos_a_cambiar[2], ruta_csv, pos) {
-        Ok(valor) => {valor},
-        
+        Ok(valor) => valor,
 
-        Err(e) => {return Err(e.to_string())},
+        Err(e) => return Err(e.to_string()),
     };
 
     linea[pos] = valor;
@@ -112,7 +110,13 @@ pub fn actualizar_csv(
     let ruta_archivo_temporal = "auxiliar.csv".to_string();
     let _ = File::create(&ruta_archivo_temporal)?;
 
-    let condiciones_parseadas = condiciones::procesar_condiciones(claves);
+    let condiciones_parseadas = match condiciones::procesar_condiciones(claves) {
+        Ok(condiciones) => condiciones,
+
+        Err(e) => {
+            return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
+        }
+    };
 
     for linea in lector.lines() {
         let linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
@@ -127,19 +131,19 @@ pub fn actualizar_csv(
                 }
             };
 
-            if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
-                let nueva_linea = cambiar_valores(linea_csv, &campos_a_cambiar, &header, &ruta_csv)
-                    .map_err(|e|{
-                        println!("{}",e);
-                        let _ = remove_file(&ruta_archivo_temporal);
-                        io::Error::new(io::ErrorKind::Other, format!("{}", e))
-                        })?;
-    
-                escribir_csv(&ruta_archivo_temporal, &nueva_linea)?
-            } else {
-                escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
-            }
+        if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
+            let nueva_linea = cambiar_valores(linea_csv, &campos_a_cambiar, &header, &ruta_csv)
+                .map_err(|e| {
+                    println!("{}", e);
+                    let _ = remove_file(&ruta_archivo_temporal);
+                    io::Error::new(io::ErrorKind::Other, format!("{}", e))
+                })?;
+
+            escribir_csv(&ruta_archivo_temporal, &nueva_linea)?
+        } else {
+            escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
         }
+    }
 
     let _ = rename(&ruta_archivo_temporal, ruta_csv);
     Ok(())
@@ -160,32 +164,38 @@ pub fn borrar_lineas_csv(
     let lector = BufReader::new(archivo);
     let ruta_archivo_temporal = "auxiliar.csv";
     let _archivo_tem = File::create(ruta_archivo_temporal)?;
+
     
-    let condiciones_parseadas = condiciones::procesar_condiciones(condiciones);
-    print!("{:?}",condiciones_parseadas);
+    let condiciones_parseadas = match condiciones::procesar_condiciones(condiciones) {
+        Ok(condiciones) => condiciones,
+
+        Err(e) => {
+            return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
+        }
+    };
+ 
     for linea in lector.lines() {
         let linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
 
-        let cumple_condiciones = match condiciones::comparar_op_logico(&condiciones_parseadas, &linea_csv, &header) {
-            Ok(segundo_resultado) => segundo_resultado,
+        let cumple_condiciones =
+            match condiciones::comparar_op_logico(&condiciones_parseadas, &linea_csv, &header) {
+                Ok(segundo_resultado) => segundo_resultado,
 
-            Err(e) => {
-                let _ = remove_file(&ruta_archivo_temporal);
-                return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
-            }
-        };
+                Err(e) => {
+                    let _ = remove_file(&ruta_archivo_temporal);
+                    return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
+                }
+            };
         //Si cumple las condicioens no escribo en el archivo ya que la quiero borrar
-        if cumple_condiciones  && &linea_csv.join(",") != &header.join(","){
-    
-            } else {
-                escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
-            }
+        if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
+        } else {
+            escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
         }
+    }
 
-        let _ = rename(ruta_archivo_temporal, ruta_csv);
+    let _ = rename(ruta_archivo_temporal, ruta_csv);
     Ok(())
 }
-
 
 pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, String> {
     let pos = header.iter().position(|s| s == clave);
@@ -228,8 +238,8 @@ mod tests {
         let mut archivo = File::create(&ruta_csv).unwrap();
 
         let header = vec!["id".to_string(), "nombre".to_string(), "edad".to_string()];
-        let campos = vec!["edad".to_string(),"=".to_string(), "40".to_string()];
-        let clave = vec!["id".to_string(),"=".to_string() ,"1".to_string()];
+        let campos = vec!["edad".to_string(), "=".to_string(), "40".to_string()];
+        let clave = vec!["id".to_string(), "=".to_string(), "1".to_string()];
 
         //Le pongo algunos datos para el test
         let datos_in = "id,nombre,edad\n1,Juan,25\n2,Maria,30\n";
@@ -259,7 +269,7 @@ mod tests {
         let mut archivo = File::create(&ruta_csv).unwrap();
 
         let header = vec!["id".to_string(), "nombre".to_string(), "edad".to_string()];
-        let clave = vec!["id".to_string(),"=".to_string() ,"1".to_string()];
+        let clave = vec!["id".to_string(), "=".to_string(), "1".to_string()];
 
         //Le pongo algunos datos para el test
         let datos_in = "id,nombre,edad\n1,Juan,25\n2,Maria,30\n";

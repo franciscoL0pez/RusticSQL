@@ -90,10 +90,8 @@ pub fn delete(consulta_sql: String, ruta_del_archivo: String) {
         }
     };
 
-
-    
     let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &nombre_del_csv);
-    
+
     let header = match manejo_de_csv::leer_header(&ruta_csv, 0) {
         Ok(header) => header,
 
@@ -102,9 +100,8 @@ pub fn delete(consulta_sql: String, ruta_del_archivo: String) {
             return;
         }
     };
-    
-    let _ = manejo_de_csv::borrar_lineas_csv(ruta_csv, header, condiciones);
 
+    let _ = manejo_de_csv::borrar_lineas_csv(ruta_csv, header, condiciones);
 }
 
 ///Funcion para ordenar las lineas cuando se hace un SELECT
@@ -185,16 +182,21 @@ pub fn select(consulta_sql: String, ruta_del_archivo: String) {
             Ok((nombre_csv, columnas, condiciones)) => (nombre_csv, columnas, condiciones),
 
             Err(e) => {
-              
                 println!("{}", e);
                 return;
             }
         };
 
-     
     let (condiciones, ordenamiento) = manejo_de_string::separar_order(condiciones);
+
     
-    let condiciones_parseadas = condiciones::procesar_condiciones(condiciones);
+    let condiciones_parseadas = match condiciones::procesar_condiciones(condiciones) {
+        Ok(condiciones) => condiciones,
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
+    };
     let ruta_csv = manejo_de_csv::obtener_ruta_del_csv(ruta_del_archivo, &nombre_csv);
 
     let header = match manejo_de_csv::leer_header(&ruta_csv, 0) {
@@ -217,5 +219,4 @@ pub fn select(consulta_sql: String, ruta_del_archivo: String) {
         };
 
     mostrar_select(matriz, columnas, &header, ordenamiento);
-    
 }
