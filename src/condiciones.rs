@@ -1,17 +1,13 @@
+use crate::errors::{self, SqlError};
 use crate::manejo_de_csv;
-use std::error::Error;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
-
+use std::io::{ BufRead, BufReader};
 /// Enum para representar los distintos tipos de operadores
 #[derive(Debug)]
 pub enum Operador {
     Igual,
-    Distinto,
     Mayor,
-    MayorIgual,
     Menor,
-    MenorIgual,
 }
 
 ///Enum para representar los distintos tipos de operadores logicos
@@ -32,26 +28,23 @@ pub struct Condicion {
 }
 
 //Funcion para obtener el tipo de operador logico
-pub fn obtener_op_logico(op: &str) -> Result<OpLogico, String> {
+pub fn obtener_op_logico(op: &str) -> Result<OpLogico, SqlError> {
     match op {
         "AND" => Ok(OpLogico::And),
         "OR" => Ok(OpLogico::Or),
         "NOT" => Ok(OpLogico::Not),
 
-        _ => Err("INVALID_SYNTAX: Operador logico inexistente en la consulta".to_string()),
+        _ => Err(errors::SqlError::InvalidSyntax),
     }
 }
 ///Funcion para obtener el tipo de operador
-pub fn obtener_op(op: &str) -> Result<Operador, String> {
+pub fn obtener_op(op: &str) -> Result<Operador, SqlError> {
     match op {
         "=" => Ok(Operador::Igual),
         "<" => Ok(Operador::Menor),
         ">" => Ok(Operador::Mayor),
-        "!=" => Ok(Operador::Distinto),
-        "<=" => Ok(Operador::MenorIgual),
-        ">=" => Ok(Operador::MayorIgual),
 
-        _ => Err("INVALID_SYNTAX: Operador  inexistente en la consulta".to_string()),
+        _ => Err(errors::SqlError::InvalidSyntax),
     }
 }
 
@@ -63,7 +56,7 @@ pub fn obtener_op(op: &str) -> Result<Operador, String> {
 /// -Repite e itera hasta llegar al final de la lista
 /// -Finalmente retorna el nuevo vector con las condiciones "parseadas"
 
-pub fn procesar_condiciones(condiciones: Vec<String>) -> Result<Vec<Condicion>, String> {
+pub fn procesar_condiciones(condiciones: Vec<String>) -> Result<Vec<Condicion>, SqlError> {
     let mut condiciones_parseadas: Vec<Condicion> = Vec::new();
     let mut i = 0;
 
@@ -74,7 +67,7 @@ pub fn procesar_condiciones(condiciones: Vec<String>) -> Result<Vec<Condicion>, 
         let operador = match obtener_op(&condiciones[i + 1]) {
             Ok(operador) => operador,
             Err(e) => {
-                return Err(e.to_string());
+                return Err(e);
             }
         };
         let valor = condiciones[i + 2].to_string();
@@ -84,7 +77,7 @@ pub fn procesar_condiciones(condiciones: Vec<String>) -> Result<Vec<Condicion>, 
                 Ok(op) => op_logico = op,
 
                 Err(e) => {
-                    return Err(e.to_string());
+                    return Err(e);
                 }
             };
         }
@@ -106,7 +99,7 @@ pub fn procesar_condiciones(condiciones: Vec<String>) -> Result<Vec<Condicion>, 
 /// -Itera sobre el operador de dicha condicion
 /// -Realiza la operacion entre el valor de la fila del csv y nuestra condicion
 /// -Retorna si es verdadero
-pub fn comparar_op(condicion: &Condicion, fila: &[String], pos: usize) -> Result<bool, String> {
+pub fn comparar_op(condicion: &Condicion, fila: &[String], pos: usize) -> Result<bool, SqlError> {
     if let Some(valor_f) = fila.get(pos) {
         match condicion.operador {
             Operador::Igual => Ok(valor_f == &condicion.valor),
@@ -116,16 +109,9 @@ pub fn comparar_op(condicion: &Condicion, fila: &[String], pos: usize) -> Result
             Operador::Menor => {
                 Ok(valor_f.parse::<i32>().ok() < condicion.valor.parse::<i32>().ok())
             }
-            Operador::Distinto => Ok(valor_f != &condicion.valor),
-            Operador::MayorIgual => {
-                Ok(valor_f.parse::<i32>().ok() >= condicion.valor.parse::<i32>().ok())
-            }
-            Operador::MenorIgual => {
-                Ok(valor_f.parse::<i32>().ok() <= condicion.valor.parse::<i32>().ok())
-            }
         }
     } else {
-        Err("INVALID_SYNTAX: El operador ingresado no existe".to_string())
+        Err(errors::SqlError::InvalidSyntax)
     }
 }
 
@@ -139,7 +125,7 @@ pub fn comparar_op_logico(
     condiciones_parseadas: &[Condicion],
     fila: &[String],
     header: &[String],
-) -> Result<bool, String> {
+) -> Result<bool, SqlError> {
     let mut resultado = true;
 
     for condicion in condiciones_parseadas.iter() {
@@ -155,7 +141,7 @@ pub fn comparar_op_logico(
             Ok(segundo_resultado) => segundo_resultado,
 
             Err(e) => {
-                return Err(e.to_string());
+                return Err(e);
             }
         };
 
@@ -178,26 +164,40 @@ pub fn comparar_op_logico(
 pub fn comparar_con_csv(
     condiciones_parseadas: Vec<Condicion>,
     ruta_csv: String,
-    header: Vec<String>,
-) -> Result<Vec<Vec<String>>, Box<dyn Error>> {
-    let archivo = File::open(&ruta_csv)?;
+    header: &Vec<String>,
+) -> Result<Vec<Vec<String>>, SqlError> {
+    let archivo = match File::open(&ruta_csv) {
+        Ok(archivo) => archivo,
+        Err(_) => {
+            return Err(errors::SqlError::Error);
+        }
+    };
+
     let lector = BufReader::new(archivo);
     let mut matriz: Vec<Vec<String>> = Vec::new();
 
     for linea in lector.lines() {
-        let fila: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
+        let fila: Vec<String> = match linea {
+            Ok(linea) => linea,
+            Err(_) => {
+                return Err(errors::SqlError::Error);
+            }
+        }
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
 
-        let cumple_condiciones = match comparar_op_logico(&condiciones_parseadas, &fila, &header) {
+        let cumple_condiciones = match comparar_op_logico(&condiciones_parseadas, &fila, header) {
             Ok(segundo_resultado) => segundo_resultado,
 
-            Err(e) => return Err(Box::new(io::Error::new(io::ErrorKind::Other, e))),
+            Err(e) => return Err(e),
         };
 
         if cumple_condiciones {
             matriz.push(fila);
         }
     }
-    matriz.insert(0, header);
+    matriz.insert(0, header.clone());
 
     Ok(matriz)
 }

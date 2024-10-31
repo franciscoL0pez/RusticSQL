@@ -177,7 +177,7 @@ fn mostrar_select(
 ///Funcion que se encarga de manejar la consulta "SELECT"
 /// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el SELECT
 pub fn select(consulta_sql: String, ruta_del_archivo: String) {
-    let (nombre_csv, columnas, condiciones) =
+    let (nombre_csv, mut columnas, condiciones) =
         match manejo_de_string::separar_datos_select(consulta_sql) {
             Ok((nombre_csv, columnas, condiciones)) => (nombre_csv, columnas, condiciones),
 
@@ -189,7 +189,6 @@ pub fn select(consulta_sql: String, ruta_del_archivo: String) {
 
     let (condiciones, ordenamiento) = manejo_de_string::separar_order(condiciones);
 
-    
     let condiciones_parseadas = match condiciones::procesar_condiciones(condiciones) {
         Ok(condiciones) => condiciones,
         Err(e) => {
@@ -208,15 +207,18 @@ pub fn select(consulta_sql: String, ruta_del_archivo: String) {
         }
     };
 
-    let matriz =
-        match condiciones::comparar_con_csv(condiciones_parseadas, ruta_csv, header.clone()) {
-            Ok(matriz) => matriz,
+    let matriz = match condiciones::comparar_con_csv(condiciones_parseadas, ruta_csv, &header) {
+        Ok(matriz) => matriz,
 
-            Err(e) => {
-                println!("{}", e);
-                return;
-            }
-        };
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
+    };
+
+    if columnas == "*" {
+        columnas = header.join(",");
+    }
 
     mostrar_select(matriz, columnas, &header, ordenamiento);
 }

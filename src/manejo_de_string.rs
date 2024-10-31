@@ -1,4 +1,5 @@
 use crate::{
+    errors::{self, SqlError},
     manejo_de_csv::{self},
     tipo_de_datos,
 };
@@ -8,13 +9,13 @@ use crate::{
 ///-Divide la cadena por espacios
 ///-Devuelve la primera palabra encontrada
 ///-En otro caso devuelve un string vacio (no hice que devuelva un error por que se maneja en el main)
-pub fn obtener_primera_palabra(cadena: &str) -> String {
+pub fn obtener_primera_palabra(cadena: &str) -> Result<String, SqlError> {
     let mut iterar_en_cadena = cadena.split_whitespace();
 
     if let Some(palabra) = iterar_en_cadena.next() {
-        palabra.to_string()
+        Ok(palabra.to_string())
     } else {
-        String::new()
+        return Err(errors::SqlError::InvalidSyntax);
     }
 }
 
@@ -23,7 +24,7 @@ pub fn obtener_primera_palabra(cadena: &str) -> String {
 ///-Define un vector con dos partes, usando VALUES para separar
 ///-Luego separa esas dos partes y opera para dejar valores y direccione_y_columnas como Strings separados
 ///-Finalmente retorna los dos Strings
-pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String>), &'static str> {
+pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
     if let Some(pos) = palabras.iter().position(|&x| x == "VALUES") {
@@ -55,10 +56,10 @@ pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String
 
             Ok((nombre_csv, valores, columnas))
         } else {
-            Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+            Err(errors::SqlError::InvalidSyntax)
         }
     } else {
-        Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+        Err(errors::SqlError::InvalidSyntax)
     }
 }
 
@@ -71,7 +72,7 @@ pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String
 ///-En otro caso devuelve un error
 pub fn separar_datos_update(
     consulta_sql: String,
-) -> Result<(String, Vec<String>, Vec<String>), &'static str> {
+) -> Result<(String, Vec<String>, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
     if let Some(_) = palabras.iter().position(|&x| x == "SET") {
@@ -94,13 +95,13 @@ pub fn separar_datos_update(
 
                 Ok((nombre_del_csv, campos_set, claves))
             } else {
-                Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+                Err(errors::SqlError::InvalidSyntax)
             }
         } else {
-            Err("INVALID_SYNTAX: Error de sintaxis en la consulta")
+            Err(errors::SqlError::InvalidSyntax)
         }
     } else {
-        Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+        Err(errors::SqlError::InvalidSyntax)
     }
 }
 
@@ -111,7 +112,7 @@ pub fn separar_datos_update(
 ///-Con la segunda cadena que contiene los valores itera sobre dicha cadena y deja solamente la calve y el valor a actualizar
 ///-Finalmente retorn un string con el nombre y un vector clave-valor
 ///-En otro caso devuelve un error
-pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>), &'static str> {
+pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
     if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
@@ -130,7 +131,7 @@ pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>
 
         Ok((nombre_csv, condiciones))
     } else {
-        Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+        Err(errors::SqlError::InvalidSyntax)
     }
 }
 
@@ -144,7 +145,7 @@ pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>
 ///-En otro caso devuelve un error
 pub fn separar_datos_select(
     consulta_sql: String,
-) -> Result<(String, String, Vec<String>), &'static str> {
+) -> Result<(String, String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
     if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
         if let Some(_) = palabras.iter().position(|&x| x == "FROM") {
@@ -175,10 +176,10 @@ pub fn separar_datos_select(
 
             Ok((nombre_csv, columnas, condiciones))
         } else {
-            Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+            Err(errors::SqlError::InvalidSyntax)
         }
     } else {
-        Err("INVALID_SYNTAX: Error de sintaxis en la consulta ")
+        Err(errors::SqlError::InvalidSyntax)
     }
 }
 
@@ -227,7 +228,7 @@ pub fn crear_matriz(
     columnas: Vec<String>,
     header: &[String],
     ruta_csv: &String,
-) -> Result<Vec<Vec<String>>, String> {
+) -> Result<Vec<Vec<String>>, SqlError> {
     let valores = valores.replace(")(", "),("); //Por si los valores vienen sin los parentesiss
     let valores: Vec<&str> = valores
         .trim_matches(|c| c == '(' || c == ')')
@@ -248,13 +249,13 @@ pub fn crear_matriz(
                 let pos = match manejo_de_csv::obtener_posicion_header(&columnas[i], header) {
                     Ok(pos) => pos,
 
-                    Err(e) => return Err(e.to_string()),
+                    Err(e) => return Err(e),
                 };
 
                 let elemento = match tipo_de_datos::comprobar_dato(elemento, &ruta_csv, pos) {
                     Ok(elemento) => elemento,
 
-                    Err(e) => return Err(e.to_string()),
+                    Err(e) => return Err(e),
                 };
 
                 vec_ordenado[pos] = elemento;
@@ -277,7 +278,10 @@ mod test {
     fn test05devuelve_la_primera_palabra_de_una_consulta() {
         let consulta = "UPDATE ordenes SET producto = cangrejo WHERE producto = Altavoces ";
 
-        let primera_palabra = obtener_primera_palabra(&consulta);
+        let primera_palabra = match obtener_primera_palabra(&consulta) {
+            Ok(palabra) => palabra,
+            Err(_) => "".to_string(),
+        };
 
         let palabra_esperada = "UPDATE";
         assert_eq!(primera_palabra, palabra_esperada);

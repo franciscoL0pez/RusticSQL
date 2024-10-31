@@ -1,4 +1,6 @@
 use crate::condiciones;
+use crate::errors;
+use crate::errors::SqlError;
 use crate::tipo_de_datos;
 use std::fs::remove_file;
 use std::fs::rename;
@@ -6,10 +8,15 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
+
 //Por ahora leo el archivo, saco el header y atajo el error asi
-pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> io::Result<Vec<String>> {
+pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> Result<Vec<String>, SqlError> {
     let path = Path::new(archivo);
-    let file = File::open(path)?;
+    let file = match File::open(path) {
+        Ok(file) => file,
+        Err(_) => return Err(errors::SqlError::InvalidTable),
+    };
+
     let reader = io::BufReader::new(file);
 
     let mut lineas = reader.lines();
@@ -21,7 +28,11 @@ pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> io::Result<Vec<S
     }
 
     if let Some(header_line) = lineas.next() {
-        let header_line = header_line?;
+        let header_line = match header_line {
+            Ok(header_line) => header_line,
+            Err(_) => return Err(SqlError::InvalidTable),
+        };
+
         let header: Vec<String> = header_line
             .split(',')
             .map(|s| s.trim().to_string())
@@ -29,10 +40,7 @@ pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> io::Result<Vec<S
 
         Ok(header)
     } else {
-        Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            "CSV_Error:Error al leer el csv",
-        ))
+        return Err(errors::SqlError::InvalidTable);
     }
 }
 ///Funcion par obtener la ruta donde se encuentran nuestros csv
@@ -48,17 +56,17 @@ pub fn obtener_ruta_del_csv(ruta: String, nombre_del_csv: &str) -> String {
 }
 ///Funcion para escribir una linea en un csv
 ///Abre el archivo y escribe una linea en el
-pub fn escribir_csv(ruta_csv: &str, linea: &str) -> io::Result<()> {
+pub fn escribir_csv(ruta_csv: &str, linea: &str) -> Result<(), SqlError> {
     if !Path::new(&ruta_csv).exists() {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("CSV_ERROR:El archivo CSV {} no existe", ruta_csv),
-        ));
+        return Err(errors::SqlError::InvalidTable);
     }
 
-    let mut archivo = OpenOptions::new().append(true).open(ruta_csv)?;
+    let mut archivo = match OpenOptions::new().append(true).open(ruta_csv) {
+        Ok(archivo) => archivo,
+        Err(_) => return Err(errors::SqlError::InvalidTable),
+    };
 
-    writeln!(archivo, "{}", linea)?;
+    let _ = writeln!(archivo, "{}", linea);
 
     Ok(())
 }
@@ -68,21 +76,21 @@ pub fn cambiar_valores(
     campos_a_cambiar: &[String],
     header: &[String],
     ruta_csv: &String,
-) -> Result<String, String> {
+) -> Result<String, SqlError> {
     let mut linea = linea;
 
     let pos = match obtener_posicion_header(&campos_a_cambiar[0], header) {
         Ok(pos) => pos,
 
         Err(e) => {
-            return Err(e.to_string());
+            return Err(e);
         }
     };
 
     let valor = match tipo_de_datos::comprobar_dato(&campos_a_cambiar[2], ruta_csv, pos) {
         Ok(valor) => valor,
 
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(e),
     };
 
     linea[pos] = valor;
@@ -90,6 +98,26 @@ pub fn cambiar_valores(
     let nueva_linea = linea.join(",");
 
     Ok(nueva_linea)
+}
+
+fn abrir_y_crear_un_archivo(ruta_csv: &str) -> Result<(File, String, File), SqlError> {
+    let archivo = match File::open(&ruta_csv) {
+        Ok(archivo) => archivo,
+        Err(_) => {
+            return Err(errors::SqlError::Error);
+        }
+    };
+
+    let ruta_archivo_temporal = "auxiliar.csv".to_string();
+
+    let _archivo_tem = match File::create(&ruta_archivo_temporal) {
+        Ok(archivo) => archivo,
+        Err(_) => {
+            return Err(errors::SqlError::Error);
+        }
+    };
+
+    Ok((archivo, ruta_archivo_temporal, _archivo_tem))
 }
 
 ///Funcion para actualizar las lineas del csv durante la consulta UPDATE
@@ -104,44 +132,59 @@ pub fn actualizar_csv(
     header: Vec<String>,
     campos_a_cambiar: Vec<String>,
     claves: Vec<String>,
-) -> io::Result<()> {
-    let archivo = File::open(&ruta_csv)?;
+) -> Result<(), SqlError> {
+    let (archivo, ruta_archivo_temporal, _archivo_tem) = match abrir_y_crear_un_archivo(&ruta_csv) {
+        Ok((archivo, ruta_archivo_temporal, _archivo_tem)) => {
+            (archivo, ruta_archivo_temporal, _archivo_tem)
+        }
+        Err(e) => return Err(e),
+    };
     let lector = BufReader::new(archivo);
-    let ruta_archivo_temporal = "auxiliar.csv".to_string();
-    let _ = File::create(&ruta_archivo_temporal)?;
 
     let condiciones_parseadas = match condiciones::procesar_condiciones(claves) {
         Ok(condiciones) => condiciones,
 
-        Err(e) => {
-            return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
+        Err(_) => {
+            return Err(errors::SqlError::InvalidSyntax);
         }
     };
 
     for linea in lector.lines() {
-        let linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
+        let linea_csv: Vec<String> = match linea {
+            Ok(linea) => linea,
+            Err(_) => {
+                let _ = remove_file(&ruta_archivo_temporal);
+                return Err(errors::SqlError::Error);
+            }
+        }
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
 
         let cumple_condiciones =
             match condiciones::comparar_op_logico(&condiciones_parseadas, &linea_csv, &header) {
                 Ok(segundo_resultado) => segundo_resultado,
 
-                Err(e) => {
+                Err(_) => {
                     let _ = remove_file(&ruta_archivo_temporal);
-                    return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
+                    return Err(errors::SqlError::InvalidSyntax);
                 }
             };
 
         if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
-            let nueva_linea = cambiar_valores(linea_csv, &campos_a_cambiar, &header, &ruta_csv)
-                .map_err(|e| {
-                    println!("{}", e);
-                    let _ = remove_file(&ruta_archivo_temporal);
-                    io::Error::new(io::ErrorKind::Other, format!("{}", e))
-                })?;
+            let nueva_linea =
+                match cambiar_valores(linea_csv, &campos_a_cambiar, &header, &ruta_csv) {
+                    Ok(nueva_linea) => nueva_linea,
 
-            escribir_csv(&ruta_archivo_temporal, &nueva_linea)?
+                    Err(e) => {
+                        let _ = remove_file(&ruta_archivo_temporal);
+                        return Err(e);
+                    }
+                };
+
+            escribir_csv(&ruta_archivo_temporal, &nueva_linea)?;
         } else {
-            escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
+            escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?;
         }
     }
 
@@ -159,23 +202,35 @@ pub fn borrar_lineas_csv(
     ruta_csv: String,
     header: Vec<String>,
     condiciones: Vec<String>,
-) -> io::Result<()> {
-    let archivo = File::open(&ruta_csv)?;
-    let lector = BufReader::new(archivo);
-    let ruta_archivo_temporal = "auxiliar.csv";
-    let _archivo_tem = File::create(ruta_archivo_temporal)?;
+) -> Result<(), SqlError> {
+    let (archivo, ruta_archivo_temporal, _archivo_tem) = match abrir_y_crear_un_archivo(&ruta_csv) {
+        Ok((archivo, ruta_archivo_temporal, _archivo_tem)) => {
+            (archivo, ruta_archivo_temporal, _archivo_tem)
+        }
+        Err(e) => return Err(e),
+    };
 
-    
+    let lector = BufReader::new(&archivo);
+
     let condiciones_parseadas = match condiciones::procesar_condiciones(condiciones) {
         Ok(condiciones) => condiciones,
 
         Err(e) => {
-            return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
+            return Err(e);
         }
     };
- 
+
     for linea in lector.lines() {
-        let linea_csv: Vec<String> = linea?.split(',').map(|s| s.trim().to_string()).collect();
+        let linea_csv: Vec<String> = match linea {
+            Ok(linea) => linea,
+            Err(_) => {
+                let _ = remove_file(&ruta_archivo_temporal);
+                return Err(errors::SqlError::Error);
+            }
+        }
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
 
         let cumple_condiciones =
             match condiciones::comparar_op_logico(&condiciones_parseadas, &linea_csv, &header) {
@@ -183,7 +238,7 @@ pub fn borrar_lineas_csv(
 
                 Err(e) => {
                     let _ = remove_file(&ruta_archivo_temporal);
-                    return Err(io::Error::new(io::ErrorKind::Other, format!("{}", e)));
+                    return Err(e);
                 }
             };
         //Si cumple las condicioens no escribo en el archivo ya que la quiero borrar
@@ -197,12 +252,12 @@ pub fn borrar_lineas_csv(
     Ok(())
 }
 
-pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, String> {
+pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, SqlError> {
     let pos = header.iter().position(|s| s == clave);
 
     match pos {
         Some(i) => Ok(i),
-        None => Err("INVALID_COLUMN: La columna ingresada no se encuntra en el csv".to_string()),
+        None => Err(errors::SqlError::InvalidColumn),
     }
 }
 

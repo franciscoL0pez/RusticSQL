@@ -1,4 +1,7 @@
-use crate::manejo_de_csv;
+use crate::{
+    errors::{self, SqlError},
+    manejo_de_csv,
+};
 
 ///Asumo para hacer la comprobacion de los datos siempre voy a tener un csv con un header y un primer registro
 ///Que no este mal ingresado
@@ -8,12 +11,12 @@ pub enum Dato {
     Interger(i64),
 }
 ///Convierto los valores de la 2 linea de mi csv a datos
-pub fn convertir_strings_a_datos_csv(ruta_csv: &String) -> Result<Vec<Dato>, String> {
+pub fn convertir_strings_a_datos_csv(ruta_csv: &String) -> Result<Vec<Dato>, SqlError> {
     let registro = match manejo_de_csv::leer_header(&ruta_csv, 1) {
         Ok(registro) => registro,
 
         Err(_e) => {
-            return Err("INVALID_SYNTAX: Datos incorrectos en la consulta".to_string());
+            return Err(errors::SqlError::Error);
         }
     };
 
@@ -48,12 +51,12 @@ pub fn comprobar_dato(
     dato_consulta: &String,
     ruta_csv: &String,
     pos_col: usize,
-) -> Result<String, String> {
+) -> Result<String, SqlError> {
     if dato_consulta != "" {
         let datos_csv = match convertir_strings_a_datos_csv(ruta_csv) {
             Ok(datos_csv) => datos_csv,
 
-            Err(e) => return Err(e.to_string()),
+            Err(e) => return Err(e),
         };
 
         let dato_consulta = convertir_a_dato(&dato_consulta);
@@ -66,7 +69,7 @@ pub fn comprobar_dato(
 
             Ok(valor)
         } else {
-            return Err("INVALID_SYNTAX: Datos incorrectos en la consulta".to_string());
+            return Err(errors::SqlError::Error);
         }
     } else {
         Ok(dato_consulta.to_string())
