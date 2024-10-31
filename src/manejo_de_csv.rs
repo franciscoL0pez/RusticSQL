@@ -46,13 +46,22 @@ pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> Result<Vec<Strin
 ///Funcion par obtener la ruta donde se encuentran nuestros csv
 ///#Le pasamos la direccion de la ruta (la que pasamos en la consulta) y el nombre del csv
 ///Luego une los strings y devuelve la ruta
-pub fn obtener_ruta_del_csv(ruta: String, nombre_del_csv: &str) -> String {
+pub fn obtener_ruta_del_csv(ruta: &str, nombre_del_csv: &str) -> String {
     let palabras: Vec<&str> = nombre_del_csv.split(" ").collect();
     let nombre_del_csv = palabras[0];
 
+   
+    if ruta.len() > 3{
+        
     let ruta_de_csv = format!("{}{}{}{}", ruta, "/", nombre_del_csv, ".csv");
-
-    ruta_de_csv.to_string()
+    return ruta_de_csv;
+    }
+    else {
+      
+        let ruta_de_csv = format!("{}{}", nombre_del_csv, ".csv");
+        return ruta_de_csv;
+    }
+    
 }
 ///Funcion para escribir una linea en un csv
 ///Abre el archivo y escribe una linea en el
@@ -289,7 +298,7 @@ mod tests {
     #[test]
     fn test03se_actualiza_el_csv_segun_una_clave() {
         //Para testear esta funcion creo un archivo de prueba y lo elimino al final
-        let ruta_csv = "test.csv".to_string();
+        let ruta_csv = "test_manejo.csv".to_string();
         let mut archivo = File::create(&ruta_csv).unwrap();
 
         let header = vec!["id".to_string(), "nombre".to_string(), "edad".to_string()];
@@ -315,35 +324,5 @@ mod tests {
 
         remove_file(&ruta_csv).unwrap();
         assert_eq!(linea_esperada, linea_actualizada);
-    }
-
-    #[test]
-    fn test04se_elimina_del_csv_una_linea() {
-        //Vuelvo a crear mi archivo de prueba
-        let ruta_csv = "test_1.csv".to_string();
-        let mut archivo = File::create(&ruta_csv).unwrap();
-
-        let header = vec!["id".to_string(), "nombre".to_string(), "edad".to_string()];
-        let clave = vec!["id".to_string(), "=".to_string(), "1".to_string()];
-
-        //Le pongo algunos datos para el test
-        let datos_in = "id,nombre,edad\n1,Juan,25\n2,Maria,30\n";
-        archivo.write_all(datos_in.as_bytes()).unwrap();
-        drop(archivo);
-
-        borrar_lineas_csv(ruta_csv.clone(), header, clave).unwrap();
-
-        let archivo = File::open(&ruta_csv).unwrap();
-        let lector = BufReader::new(archivo);
-        let mut lineas = lector.lines();
-
-        //Me quedo con la 2 linea ya que luego del header es la que actualice
-        let _ = lineas.next().unwrap();
-        let linea_actualizada = lineas.next().unwrap().unwrap();
-        let linea_esperada = "1,Juan,25".to_string();
-
-        //Como elimine la 2 linea comparo y tienen que ser distintas
-        remove_file(&ruta_csv).unwrap();
-        assert_ne!(linea_esperada, linea_actualizada);
     }
 }

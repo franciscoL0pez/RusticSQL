@@ -6,7 +6,7 @@ mod manejo_de_csv;
 mod manejo_de_string;
 mod tipo_de_datos;
 
-fn realizar_consulta(consulta_sql: String, ruta: String) -> Result<(), errors::SqlError> {
+fn realizar_consulta(consulta_sql: &str, ruta: &str) -> Result<(), errors::SqlError> {
     // Obtener la primera palabra solo una vez
     let primera_palabra = match manejo_de_string::obtener_primera_palabra(&consulta_sql) {
         Ok(palabra) => palabra,
@@ -17,10 +17,10 @@ fn realizar_consulta(consulta_sql: String, ruta: String) -> Result<(), errors::S
     };
 
     match primera_palabra.as_str() {
-        "INSERT" => consultas::insert(consulta_sql, ruta),
-        "UPDATE" => consultas::update(consulta_sql, ruta),
-        "DELETE" => consultas::delete(consulta_sql, ruta),
-        "SELECT" => consultas::select(consulta_sql, ruta),
+        "INSERT" => consultas::insert(consulta_sql, ruta)?,
+        "UPDATE" => consultas::update(consulta_sql, ruta)?,
+        "DELETE" => consultas::delete(consulta_sql, ruta)?,
+        "SELECT" => consultas::select(consulta_sql, ruta)?,
         _ => return Err(errors::SqlError::InvalidSyntax),
     }
 
@@ -34,7 +34,7 @@ fn main() {
     let ruta = &consulta_completa[1];
     let consulta_sql: &String = &consulta_completa[2];
 
-    match realizar_consulta(consulta_sql.to_string(), ruta.to_string()) {
+    match realizar_consulta(consulta_sql, ruta) {
         Ok(_) => (),
         Err(e) => eprintln!("{}", e),
     }

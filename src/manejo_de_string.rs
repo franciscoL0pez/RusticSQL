@@ -24,7 +24,7 @@ pub fn obtener_primera_palabra(cadena: &str) -> Result<String, SqlError> {
 ///-Define un vector con dos partes, usando VALUES para separar
 ///-Luego separa esas dos partes y opera para dejar valores y direccione_y_columnas como Strings separados
 ///-Finalmente retorna los dos Strings
-pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String>), SqlError> {
+pub fn separar_datos(consulta_sql: &str) -> Result<(String, String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
     if let Some(pos) = palabras.iter().position(|&x| x == "VALUES") {
@@ -71,7 +71,7 @@ pub fn separar_datos(consulta_sql: String) -> Result<(String, String, Vec<String
 ///-Finalmente retorn un string con el nombre, un vector con los valores y otro con la clave para actualizar
 ///-En otro caso devuelve un error
 pub fn separar_datos_update(
-    consulta_sql: String,
+    consulta_sql: &str,
 ) -> Result<(String, Vec<String>, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
@@ -112,7 +112,7 @@ pub fn separar_datos_update(
 ///-Con la segunda cadena que contiene los valores itera sobre dicha cadena y deja solamente la calve y el valor a actualizar
 ///-Finalmente retorn un string con el nombre y un vector clave-valor
 ///-En otro caso devuelve un error
-pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>), SqlError> {
+pub fn separar_datos_delete(consulta_sql: &str) -> Result<(String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
     if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
@@ -144,7 +144,7 @@ pub fn separar_datos_delete(consulta_sql: String) -> Result<(String, Vec<String>
 ///-Finalmente retorn un string con el nombre otro con las columnas y por ultimo un vector con las condiciones
 ///-En otro caso devuelve un error
 pub fn separar_datos_select(
-    consulta_sql: String,
+    consulta_sql: &str,
 ) -> Result<(String, String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
     if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
@@ -291,7 +291,7 @@ mod test {
     fn test06separa_los_datos_del_select_y_los_devuelve() {
         let consulta = "SELECT id,producto,cantidad FROM ordenes WHERE producto = Teclado AND cantidad >= 1 ORDER BY CANTIDAD ASC ".to_string();
 
-        let (nombre_csv, columnas, condiciones) = separar_datos_select(consulta).unwrap();
+        let (nombre_csv, columnas, condiciones) = separar_datos_select(&consulta).unwrap();
 
         let nombre_csv_esperado = "ordenes";
         let columnas_eperadas = "id,producto,cantidad";
