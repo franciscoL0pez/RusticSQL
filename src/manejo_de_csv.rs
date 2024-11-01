@@ -50,18 +50,13 @@ pub fn obtener_ruta_del_csv(ruta: &str, nombre_del_csv: &str) -> String {
     let palabras: Vec<&str> = nombre_del_csv.split(" ").collect();
     let nombre_del_csv = palabras[0];
 
-   
-    if ruta.len() > 3{
-        
-    let ruta_de_csv = format!("{}{}{}{}", ruta, "/", nombre_del_csv, ".csv");
-    return ruta_de_csv;
-    }
-    else {
-      
+    if ruta.len() > 3 {
+        let ruta_de_csv = format!("{}{}{}{}", ruta, "/", nombre_del_csv, ".csv");
+        return ruta_de_csv;
+    } else {
         let ruta_de_csv = format!("{}{}", nombre_del_csv, ".csv");
         return ruta_de_csv;
     }
-    
 }
 ///Funcion para escribir una linea en un csv
 ///Abre el archivo y escribe una linea en el

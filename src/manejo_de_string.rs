@@ -143,9 +143,7 @@ pub fn separar_datos_delete(consulta_sql: &str) -> Result<(String, Vec<String>),
 ///-Con la segunda cadena que contiene las condiciones quita los ; y recoge todo en un vector.
 ///-Finalmente retorn un string con el nombre otro con las columnas y por ultimo un vector con las condiciones
 ///-En otro caso devuelve un error
-pub fn separar_datos_select(
-    consulta_sql: &str,
-) -> Result<(String, String, Vec<String>), SqlError> {
+pub fn separar_datos_select(consulta_sql: &str) -> Result<(String, String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
     if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
         if let Some(_) = palabras.iter().position(|&x| x == "FROM") {

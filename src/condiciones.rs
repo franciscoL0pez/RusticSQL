@@ -1,7 +1,7 @@
 use crate::errors::{self, SqlError};
 use crate::manejo_de_csv;
 use std::fs::File;
-use std::io::{ BufRead, BufReader};
+use std::io::{BufRead, BufReader};
 /// Enum para representar los distintos tipos de operadores
 #[derive(Debug)]
 pub enum Operador {

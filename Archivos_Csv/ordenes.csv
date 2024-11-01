@@ -1,7 +1,8 @@
 id,id_cliente,producto,cantidad
-103,1,xd,1
-104,3,s,20
-122,99,s,20
-106,5,xd,1
+103,1,Teclado,1
+104,3,Bajo,20
+122,99,Bateria,20
+106,5,Guitarra,1
 1,2,Monitor,22
-2222,2,Monitor,
+3333,3,Monitor,22
+2222,2,Monitor,1

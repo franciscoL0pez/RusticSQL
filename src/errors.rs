@@ -30,11 +30,14 @@ impl Display for SqlError {
 #[cfg(test)]
 mod tests {
 
-    use std::{fs::{remove_file, File}, io::{BufRead, BufReader}};
+    use std::{
+        fs::{remove_file, File},
+        io::{BufRead, BufReader},
+    };
 
-    use crate::{manejo_de_csv::obtener_posicion_header, realizar_consulta};
     use crate::manejo_de_csv::escribir_csv;
-    
+    use crate::{manejo_de_csv::obtener_posicion_header, realizar_consulta};
+
     use super::*;
 
     #[test]
@@ -77,10 +80,10 @@ mod tests {
     }
 
     #[test]
-    fn intento_realizar_una_query_con_errores_de_syntaxis(){
+    fn intento_realizar_una_query_con_errores_de_syntaxis() {
         let error = SqlError::InvalidSyntax;
         let consulta = "INSERTS INTOD tabla (id, nombre, apellido) VALUES (1, 'Juan', 'Perez')";
-        
+
         match realizar_consulta(consulta, "test.csv") {
             Ok(_) => panic!("No deberia haber pasado"),
             Err(e) => assert_eq!(e, error),
@@ -88,12 +91,11 @@ mod tests {
     }
 
     #[test]
-    fn intento_leer_un_csv_vacio(){
+    fn intento_leer_un_csv_vacio() {
         let error = SqlError::Error;
         let ruta_csv = "test_invalid_1.csv".to_string();
         let _ = File::create(&ruta_csv).unwrap();
         let archivo = File::open(&ruta_csv).unwrap();
-
 
         let lector = BufReader::new(archivo);
         let mut lineas = lector.lines();
@@ -103,7 +105,5 @@ mod tests {
             None => assert_eq!(SqlError::Error, error),
         }
         remove_file(&ruta_csv).unwrap();
-
     }
-
 }
