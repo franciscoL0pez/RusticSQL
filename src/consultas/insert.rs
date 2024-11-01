@@ -55,11 +55,11 @@ mod tests {
         fs::{remove_file, File},
         io::{BufRead, BufReader, BufWriter, Write},
     };
-    use crate::{consultas::lock_test::{acquire_lock,release_lock}, errors, realizar_consulta};
+    use crate::{consultas::lock_test::{_acquire_lock,_release_lock}, errors, realizar_consulta};
 
     #[test]
     fn test_inserto_una_nueva_fila_a_un_csv() {
-        acquire_lock();
+        _acquire_lock();
         let nombre_del_csv = "test.csv";
 
         let archivo = File::create(nombre_del_csv).expect("No se pudo crear el archivo");
@@ -91,12 +91,12 @@ mod tests {
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
 
-        release_lock();
+        _release_lock();
     }
 
     #[test]
     fn realizo_un_insert_con_varis_filas() {
-        acquire_lock();
+        _acquire_lock();
 
         let nombre_del_csv = "test2.csv";
 
@@ -134,12 +134,12 @@ mod tests {
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
 
-        release_lock();
+        _release_lock();
     }
 
     #[test]
     fn realizo_un_insert_con_menos_columnas_que_las_que_tiene_el_header() {
-        acquire_lock();
+        _acquire_lock();
 
         let nombre_del_csv = "test3.csv";
 
@@ -169,12 +169,12 @@ mod tests {
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
         
-        release_lock();
+        _release_lock();
     }
     //Si me tiran una columna que no esta en el header devuelvo un error de columna invalida
     #[test]
     fn relizo_un_insert_con_mas_columnas_que_las_que_tiene_el_header() {
-        acquire_lock();
+        _acquire_lock();
         let nombre_del_csv = "test4.csv";
         let error2 = errors::SqlError::InvalidColumn;
         let archivo = File::create(nombre_del_csv).expect("No se pudo crear el archivo");
@@ -198,12 +198,12 @@ mod tests {
         }
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
-        release_lock();
+        _release_lock();
     }
 
     #[test]
     fn realizo_un_insert_con_datos_incorrectos() {
-        acquire_lock();
+        _acquire_lock();
         let nombre_del_csv = "test5.csv";
         let error = errors::SqlError::Error;
         let archivo = File::create(nombre_del_csv).expect("No se pudo crear el archivo");
@@ -227,6 +227,6 @@ mod tests {
         }
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
-        release_lock();
+        _release_lock();
     }
 }

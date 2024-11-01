@@ -268,11 +268,12 @@ pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, 
 #[cfg(test)]
 mod tests {
     use std::fs::remove_file;
-
+    use crate::consultas::lock_test::{_acquire_lock,_release_lock};
     use super::*;
 
     #[test]
     fn test01leer_header_y_devolverlo() {
+        _acquire_lock();
         let direccion_del_archivo = "Archivos_Csv/ordenes.csv".to_string();
 
         let resultado = leer_header(&direccion_del_archivo, 0);
@@ -280,6 +281,7 @@ mod tests {
 
         let header = resultado.unwrap();
         assert_eq!(header, vec!["id", "id_cliente", "producto", "cantidad"]);
+        _release_lock();
     }
 
     #[test]
@@ -292,6 +294,7 @@ mod tests {
 
     #[test]
     fn test03se_actualiza_el_csv_segun_una_clave() {
+        _acquire_lock();
         //Para testear esta funcion creo un archivo de prueba y lo elimino al final
         let ruta_csv = "test_manejo.csv".to_string();
         let mut archivo = File::create(&ruta_csv).unwrap();
@@ -319,5 +322,6 @@ mod tests {
 
         remove_file(&ruta_csv).unwrap();
         assert_eq!(linea_esperada, linea_actualizada);
+        _release_lock();
     }
 }

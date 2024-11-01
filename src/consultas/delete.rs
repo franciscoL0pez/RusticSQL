@@ -30,13 +30,13 @@ pub fn delete(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
 mod tests {
     use std::{fs::{remove_file, File}, io::{BufRead, BufReader, BufWriter, Write}};
 
-    use crate::{consultas::lock_test::{acquire_lock, archivo_temp, release_lock}, realizar_consulta};
+    use crate::{consultas::lock_test::{_acquire_lock, _archivo_temp, _release_lock}, realizar_consulta};
 
     #[test]
     fn realizo_un_delete_con_una_condicion(){
-    acquire_lock();
+    _acquire_lock();
 
-    let nombre_del_csv = archivo_temp("delete_test1");
+    let nombre_del_csv = _archivo_temp("delete_test1");
 
     let archivo = File::create(&nombre_del_csv).expect("No se pudo crear el archivo");
     let mut writer = BufWriter::new(archivo);
@@ -65,13 +65,13 @@ mod tests {
 
     
     remove_file(&nombre_del_csv).expect("No se pudo eliminar el archivo");
-    release_lock();
+    _release_lock();
     }
 
     #[test]
     fn realizo_un_delete_con_and_or_not(){
-        acquire_lock();
-        let nombre_del_csv = archivo_temp("delete_test1");
+        _acquire_lock();
+        let nombre_del_csv = _archivo_temp("delete_test1");
 
         let archivo = File::create(&nombre_del_csv).expect("No se pudo crear el archivo");
         let mut writer = BufWriter::new(archivo);
@@ -100,6 +100,6 @@ mod tests {
 
   
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
-        release_lock();
+        _release_lock();
     }
 }

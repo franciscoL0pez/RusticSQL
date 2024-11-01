@@ -6,23 +6,29 @@ fn ordenar_matriz(
     matriz: Vec<Vec<String>>,
     ordenamiento: Vec<String>,
     header: &[String],
-) -> Result<Vec<Vec<String>>, String> {
+) -> Result<Vec<Vec<String>>, SqlError> {
     let mut matriz = matriz;
     let fila_1 = matriz.remove(0);
 
-    let pos = match manejo_de_csv::obtener_posicion_header(&ordenamiento[1].to_lowercase(), header)
+   
+    let pos = match manejo_de_csv::obtener_posicion_header(&ordenamiento[0].to_lowercase(), header)
     {
         Ok(pos) => pos,
 
         Err(e) => {
-            return Err(e.to_string());
+            return Err(e);
         }
     };
 
-    if ordenamiento[2] == "ASC" {
+
+    if ordenamiento[1] == "ASC" {
         matriz.sort_by(|a, b| a[pos].cmp(&b[pos]));
-    } else if ordenamiento[2] == "DESC" {
+    } else if ordenamiento[1] == "DESC" {
         matriz.sort_by(|a, b| b[pos].cmp(&a[pos]));
+    }
+
+    else {
+        return Err(errors::SqlError::InvalidSyntax);
     }
 
     matriz.insert(0, fila_1);
@@ -44,6 +50,7 @@ fn mostrar_select(
     let mut posiciones: Vec<usize> = Vec::new();
 
     for valor in &columnas_selec {
+        
         match manejo_de_csv::obtener_posicion_header(valor, header) {
             Ok(pos) => posiciones.push(pos),
 
@@ -53,7 +60,7 @@ fn mostrar_select(
             }
         };
     }
-
+   
     let matriz = match ordenar_matriz(matriz, ordenamiento, header) {
         Ok(matriz) => matriz,
 
@@ -62,7 +69,7 @@ fn mostrar_select(
             return;
         }
     };
-
+   
     for fila in &matriz {
         let fila_ord: Vec<String> = posiciones.iter().map(|&i| fila[i].to_string()).collect();
 
@@ -82,7 +89,13 @@ pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
             }
         };
 
-    let (condiciones, ordenamiento) = manejo_de_string::separar_order(condiciones);
+    let (condiciones, ordenamiento) = match  manejo_de_string::separar_order(condiciones){
+
+        Ok((condiciones, ordenamiento)) => (condiciones, ordenamiento),
+        Err(e) => {
+            return Err(e);
+        }
+    };
 
     let condiciones_parseadas = match condiciones::procesar_condiciones(condiciones) {
         Ok(condiciones) => condiciones,
@@ -100,6 +113,7 @@ pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
         }
     };
 
+   
     let matriz = match condiciones::comparar_con_csv(condiciones_parseadas, ruta_csv, &header) {
         Ok(matriz) => matriz,
 
@@ -107,11 +121,11 @@ pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
             return Err(e);
         }
     };
-
+    
     if columnas == "*" {
         columnas = header.join(",");
     }
-
+    
     mostrar_select(matriz, columnas, &header, ordenamiento);
     Ok(())
 }
@@ -124,10 +138,10 @@ mod tests {
         process::{Command, Stdio},
     };
 
-    use crate::consultas::lock_test::{acquire_lock,release_lock};
+    use crate::consultas::lock_test::{_acquire_lock,_release_lock};
     #[test]
     fn realizo_un_select_con_varias_condiciones() {
-        acquire_lock();
+        _acquire_lock();
         //Para los test del select uso el archivo ordenes.csv
         let output = Command::new("cargo")
             .arg("run")
@@ -175,12 +189,12 @@ mod tests {
 
         remove_file(out).expect("No se pudo eliminar el archivo");
 
-        release_lock();
+        _release_lock();
     }
 
     #[test]
     fn realizo_un_insert_con_varias_condiciones() {
-        acquire_lock();
+        _acquire_lock();
         //Para los test del select uso el archivo ordenes.csv
         let output = Command::new("cargo")
         .arg("run")
@@ -220,6 +234,6 @@ mod tests {
         assert_eq!(vec, vec!["3333,3,Monitor,22"]);
 
         remove_file(out).expect("No se pudo eliminar el archivo");
-        release_lock();
+        _release_lock();
     }
 }

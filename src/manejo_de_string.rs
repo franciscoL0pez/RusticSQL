@@ -187,34 +187,37 @@ pub fn separar_datos_select(consulta_sql: &str) -> Result<(String, String, Vec<S
 ///-Separa el vector en dos strings y luego los mapea en dos vectores que contengan las condiciones y por otro lado el ORDER
 ///-Finalmente devuelve dos vectores uno con el criterio de ordenamiento y otro con las condiciones
 ///-En caso de no contener ORDER devuelve un vector con las condiciones y uno de ordenamiento vacio.
-pub fn separar_order(condiciones: Vec<String>) -> (Vec<String>, Vec<String>) {
-    let ordenamiento: Vec<String> = Vec::new();
+pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<String>),SqlError>  {
     let condiciones = condiciones.join(" ");
+  
+    let palabras: Vec<&str> = condiciones.split_whitespace().collect();
 
-    if condiciones.contains("ORDER") {
-        let condiciones = condiciones.split("ORDER").collect::<Vec<&str>>();
+    if let Some(_) = palabras.iter().position(|&x| x == "ORDER") {
+        if let Some(_) = palabras.iter().position(|&x| x == "BY") {
+            let condiciones = condiciones.split("ORDER BY").collect::<Vec<&str>>();
 
-        let ordenamiento = condiciones[1]
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .collect();
+            let ordenamiento = condiciones[1]
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect();
 
-        let condiciones = condiciones[0];
+            let condiciones = condiciones[0];
 
-        let condiciones: Vec<String> = condiciones
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .collect();
+            let condiciones: Vec<String> = condiciones
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect();
 
-        (condiciones, ordenamiento)
+            Ok((condiciones, ordenamiento))
+        } else {
+            return Err(errors::SqlError::InvalidSyntax);
+        }
     } else {
-        let condiciones: Vec<String> = condiciones
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .collect();
-
-        (condiciones, ordenamiento)
+        return Err(errors::SqlError::InvalidSyntax);
     }
+        
+    
+
 }
 
 ///Funcion para crear una matriz a la hora de utilizar el INSERT con multiples valores
@@ -234,7 +237,6 @@ pub fn crear_matriz(
         .collect();
 
     let mut matriz: Vec<Vec<String>> = Vec::new();
-
     for valor in valores {
         let vec_sin_ordenar: Vec<String> = valor.split(",").map(|s| s.to_string()).collect();
         let mut vec_ordenado: Vec<String> = Vec::new();

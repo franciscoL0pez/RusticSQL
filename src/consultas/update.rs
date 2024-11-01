@@ -36,11 +36,11 @@ mod tests {
         io::{BufRead, BufReader, BufWriter, Write},
     };
 
-    use crate::{consultas::lock_test::{acquire_lock, release_lock}, realizar_consulta};
+    use crate::{consultas::lock_test::{_acquire_lock, _release_lock}, realizar_consulta};
 
     #[test]
     fn realizo_un_update_con_una_condicion() {
-        acquire_lock();
+        _acquire_lock();
         let nombre_del_csv = "test6.csv";
 
         let archivo = File::create(nombre_del_csv).expect("No se pudo crear el archivo");
@@ -73,12 +73,12 @@ mod tests {
         assert_eq!(linea, "2,fran,lopez");
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
-        release_lock();
+        _release_lock();
     }
 
     #[test]
     fn realizo_un_update_con_and_y_or() {
-        acquire_lock();
+        _acquire_lock();
         let nombre_del_csv = "test7.csv";
 
         let archivo = File::create(nombre_del_csv).expect("No se pudo crear el archivo");
@@ -115,12 +115,12 @@ mod tests {
         assert_eq!(linea, "2,fran,perez");
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
-        release_lock();
+        _release_lock();
     }
 
     #[test]
     fn realizo_un_update_con_and_not_y_or() {
-        acquire_lock();
+        _acquire_lock();
         let nombre_del_csv = "test8.csv";
 
         let archivo = File::create(nombre_del_csv).expect("No se pudo crear el archivo");
@@ -153,6 +153,6 @@ mod tests {
         assert_eq!(linea, "2,fran,lopez");
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
-        release_lock();
+        _release_lock();
     }
 }
