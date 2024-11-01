@@ -9,7 +9,20 @@ use std::fs::OpenOptions;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 
-//Por ahora leo el archivo, saco el header y atajo el error asi
+pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, SqlError> {
+    let pos = header.iter().position(|s| s == clave);
+
+    match pos {
+        Some(i) => Ok(i),
+        None => Err(errors::SqlError::InvalidColumn),
+    }
+}
+
+
+///Leo el header de un csv 
+///# Recibe la ruta del archivo y la cantidad de lineas a ignorar
+///- Devuelve un vector con el header
+///- En caso de que no se pueda leer el archivo devuelve un error
 pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> Result<Vec<String>, SqlError> {
     let path = Path::new(archivo);
     let file = match File::open(path) {
@@ -45,7 +58,9 @@ pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> Result<Vec<Strin
 }
 ///Funcion par obtener la ruta donde se encuentran nuestros csv
 ///#Le pasamos la direccion de la ruta (la que pasamos en la consulta) y el nombre del csv
-///Luego une los strings y devuelve la ruta
+/// -Luego une los strings y devuelve la ruta
+/// -En caso de que la ruta sea menor a 3 caracteres devuelve solo el nombre del csv
+/// -En caso contrario devuelve la ruta completa
 pub fn obtener_ruta_del_csv(ruta: &str, nombre_del_csv: &str) -> String {
     let palabras: Vec<&str> = nombre_del_csv.split(" ").collect();
     let nombre_del_csv = palabras[0];
@@ -60,6 +75,9 @@ pub fn obtener_ruta_del_csv(ruta: &str, nombre_del_csv: &str) -> String {
 }
 ///Funcion para escribir una linea en un csv
 ///Abre el archivo y escribe una linea en el
+/// #Recibe la ruta del csv y la linea a escribir
+/// -En caso de que no exista el archivo devuelve un error
+/// -En caso contrario escribe la linea en el archivo
 pub fn escribir_csv(ruta_csv: &str, linea: &str) -> Result<(), SqlError> {
     if !Path::new(&ruta_csv).exists() {
         return Err(errors::SqlError::InvalidTable);
@@ -74,7 +92,13 @@ pub fn escribir_csv(ruta_csv: &str, linea: &str) -> Result<(), SqlError> {
 
     Ok(())
 }
-
+///Funcion para cambiar los valores de una linea en el csv
+/// #Recibe una linea, los campos a cambiar, el header y la ruta del csv
+/// -Obtiene la posicion del campo a cambiar en el header
+/// -Comprueba el tipo de dato que se quiere cambiar
+/// -Cambia el valor en la linea
+/// -Devuelve la linea con los valores cambiados
+/// -En caso de que no se pueda cambiar el valor devuelve un error
 pub fn cambiar_valores(
     linea: Vec<String>,
     campos_a_cambiar: &[String],
@@ -104,6 +128,15 @@ pub fn cambiar_valores(
     Ok(nueva_linea)
 }
 
+
+/// Funcion para abrir y crear un archivo
+/// #Recibe la ruta del csv
+/// -Abre el archivo y en caso de que no exista devuelve un error
+/// -Crea un archivo auxiliar
+/// -Devuelve los archivos abiertos
+/// -En caso de que no se pueda abrir o crear un archivo devuelve un error
+/// -En caso contrario devuelve los archivos abiertos
+/// -En caso de que no se pueda abrir o crear un archivo devuelve un error
 fn abrir_y_crear_un_archivo(ruta_csv: &str) -> Result<(File, String, File), SqlError> {
     let archivo = match File::open(&ruta_csv) {
         Ok(archivo) => archivo,
@@ -124,6 +157,9 @@ fn abrir_y_crear_un_archivo(ruta_csv: &str) -> Result<(File, String, File), SqlE
     Ok((archivo, ruta_archivo_temporal, _archivo_tem))
 }
 
+
+
+/* 
 ///Funcion para actualizar las lineas del csv durante la consulta UPDATE
 ///#Recibe por parametro el header, ruta del csv, la clave y los campos a actualizar
 ///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtenemos la posicion donde se encuentra nuestra clave comparandla con el header
@@ -201,7 +237,8 @@ pub fn actualizar_csv(
 ///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtiene la posicion donde se encuentra nuestra clave comparandla con el header
 ///-En caso de que esta no se encuentre lanza un error
 ///-Itera en las lineas del csv y si encontramos que coinciden no los copiamos en nuestro archivo aux
-///-Finalmente renombramos nuestro archivo auxiliar como si fuera el original
+
+
 pub fn borrar_lineas_csv(
     ruta_csv: String,
     header: Vec<String>,
@@ -256,14 +293,6 @@ pub fn borrar_lineas_csv(
     Ok(())
 }
 
-pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, SqlError> {
-    let pos = header.iter().position(|s| s == clave);
-
-    match pos {
-        Some(i) => Ok(i),
-        None => Err(errors::SqlError::InvalidColumn),
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -325,3 +354,4 @@ mod tests {
         _release_lock();
     }
 }
+*/

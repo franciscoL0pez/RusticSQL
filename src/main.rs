@@ -5,13 +5,19 @@ mod errors;
 mod manejo_de_csv;
 mod manejo_de_string;
 mod tipo_de_datos;
+mod operadores;
+mod parseador_recursivo;
 use crate::consultas::delete::delete;
 use crate::consultas::insert::insert;
 use crate::consultas::select::select;
 use crate::consultas::update::update;
 
-//quiero importar las consultas de mi carpeta consultas, que tiene insert,delete,select,update la
-//cual me ayudara a realizar las consultas
+/// Funcion para realizar una consulta
+/// #Recibe la consulta y la ruta del archivo
+/// -Llama a las demas funciones para procesar la consulta
+/// -y realizar la accion correspondiente
+/// -Si la consulta es correcta devuelve Ok
+/// -Si la consulta es incorrecta devuelve un error
 
 fn realizar_consulta(consulta_sql: &str, ruta: &str) -> Result<(), errors::SqlError> {
     // Obtener la primera palabra solo una vez
@@ -33,8 +39,7 @@ fn realizar_consulta(consulta_sql: &str, ruta: &str) -> Result<(), errors::SqlEr
 
     Ok(())
 }
-///Recibe una consulta por consolta y la recollecta en un vector
-///Luego la divide en dos vectores y llama al manejador de consultas para realizar la consulta
+
 fn main() {
     let consulta_completa: Vec<String> = std::env::args().collect();
 

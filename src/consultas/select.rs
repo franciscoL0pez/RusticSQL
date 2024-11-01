@@ -1,5 +1,6 @@
 use crate::{condiciones, errors, manejo_de_csv, manejo_de_string};
 use errors::SqlError;
+use crate::parseador_recursivo::parsear_condicion;
 ///Funcion para ordenar las lineas cuando se hace un SELECT
 /// Recibe la matriz, el header y un vector ordenamiento, con la condicion y si es ASC o DESC
 fn ordenar_matriz(
@@ -37,7 +38,7 @@ fn mostrar_select(
     columnas_selec: String,
     header: &[String],
     ordenamiento: Vec<String>,
-) {
+)-> Result<(),SqlError> {
     let columnas_selec: Vec<String> = columnas_selec
         .split(',')
         .map(|s| s.trim().to_string())
@@ -49,8 +50,7 @@ fn mostrar_select(
             Ok(pos) => posiciones.push(pos),
 
             Err(e) => {
-                println!("{}", e);
-                return;
+                return Err(e);
             }
         };
     }
@@ -59,8 +59,7 @@ fn mostrar_select(
         Ok(matriz) => matriz,
 
         Err(e) => {
-            println!("{}", e);
-            return;
+            return Err(e);
         }
     };
 
@@ -69,10 +68,19 @@ fn mostrar_select(
 
         println!("{}", fila_ord.join(","));
     }
+    Ok(())
 }
 
 ///Funcion que se encarga de manejar la consulta "SELECT"
-/// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el SELECT
+/// #Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el SELECT
+/// -Primero se separan los datos de la consulta
+/// -Se separan las condiciones y el ordenamiento
+/// -Se procesan las condiciones
+/// -Se obtiene la ruta del csv
+/// -Se lee el header
+/// -Se compara con el csv
+/// -Se muestra el select
+/// -Finalmente retorna un Ok o un Err
 pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError> {
     let (nombre_csv, mut columnas, condiciones) =
         match manejo_de_string::separar_datos_select(&consulta_sql) {
@@ -90,7 +98,14 @@ pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
         }
     };
 
-    let condiciones_parseadas = match condiciones::procesar_condiciones(condiciones) {
+    
+    //Quiero pasar condiciones de un vector de strings a un vector de referencias de strings
+    //para poder pasarlo a la funcion parsear_condicion
+
+    let condiciones: Vec<&str> = condiciones.iter().map(|s| s.as_str()).collect();
+    let mut pos = 0;
+    
+    let condiciones_parseadas = match parsear_condicion(&condiciones,&mut pos) {
         Ok(condiciones) => condiciones,
         Err(e) => {
             return Err(e);
@@ -105,7 +120,7 @@ pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
             return Err(e);
         }
     };
-
+   
     let matriz = match condiciones::comparar_con_csv(condiciones_parseadas, ruta_csv, &header) {
         Ok(matriz) => matriz,
 
@@ -118,7 +133,12 @@ pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
         columnas = header.join(",");
     }
 
-    mostrar_select(matriz, columnas, &header, ordenamiento);
+    match mostrar_select(matriz, columnas, &header, ordenamiento) {
+        Ok(_) => {}
+        Err(e) => {
+            return Err(e);
+        }
+    }
     Ok(())
 }
 
@@ -139,7 +159,7 @@ mod tests {
             .arg("run")
             .arg("--")
             .arg("Archivos_Csv")
-            .arg("SELECT * FROM ordenes WHERE producto = Monitor ORDER BY cantidad ASC;")
+            .arg("SELECT * FROM ordenes WHERE producto = Monitor AND id > 2 OR producto = Bateria ORDER BY cantidad ASC;")
             .stdout(Stdio::piped()) // Redirigir stdout
             .output()
             .unwrap();
@@ -154,7 +174,7 @@ mod tests {
             //Una vez ue tengo el stdout le quito la parte de "Archivos_Csv" y la sel select y luego lo inserto en el archivo
             let stdout = stdout.replace("Archivos_Csv", "");
             let stdout = stdout.replace(
-                "SELECT * FROM ordenes WHERE producto = Monitor ORDER BY cantidad ASC;",
+                "SELECT * FROM ordenes WHERE producto = Monitor AND id > 2 OR producto = Bateria ORDER BY cantidad ASC;",
                 "",
             );
 
@@ -176,7 +196,7 @@ mod tests {
         }
         assert_eq!(
             vec,
-            vec!["2222,2,Monitor,1", "1,2,Monitor,22", "3333,3,Monitor,22"]
+            vec!["2222,2,Monitor,1", "122,99,Bateria,20", "3333,3,Monitor,22"]
         );
 
         remove_file(out).expect("No se pudo eliminar el archivo");
@@ -287,4 +307,60 @@ mod tests {
         remove_file(out).expect("No se pudo eliminar el archivo");
         _release_lock();
     }
+
+    #[test]
+    fn realizo_un_select_con_varias_condiciones2(){
+        _acquire_lock();
+        //Para los test del select uso el archivo ordenes.csv
+        let output = Command::new("cargo")
+            .arg("run")
+            .arg("--")
+            .arg("Archivos_Csv")
+            .arg("SELECT * FROM ordenes WHERE producto = Monitor AND id > 2 OR producto = Bateria AND NOT producto = Bateria  ORDER BY cantidad DESC;")
+            .stdout(Stdio::piped()) // Redirigir stdout
+            .output()
+            .unwrap();
+
+        let out = "output.csv";
+        let archivo = File::create(out).unwrap();
+        let mut writer = BufWriter::new(archivo);
+
+        if output.status.success() {
+            // Convertir la salida en un String
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            //Una vez ue tengo el stdout le quito la parte de "Archivos_Csv" y la sel select y luego lo inserto en el archivo
+            let stdout = stdout.replace("Archivos_Csv", "");
+            let stdout = stdout.replace(
+                "SELECT * FROM ordenes WHERE producto = Monitor AND id > 2 OR producto = Bateria AND NOT producto = Bateria  ORDER BY cantidad DESC;",
+                "",
+            );
+
+            writeln!(writer, "{}", stdout.trim()).unwrap();
+            writer.flush().unwrap();
+        }
+
+        //leo linea a linea el archivo output.csv con un vector y lo meto en un vector para luego hacer un assert
+        let archivo = File::open(out).expect("No se pudo abrir el archivo");
+        let lector = BufReader::new(archivo);
+        let mut lineas = lector.lines();
+        let mut vec: Vec<String> = Vec::new();
+
+        //salteo la primera linea para no leer el header
+        lineas.next();
+
+        for linea in lineas {
+            vec.push(linea.expect("No se pudo leer la linea"));
+        }
+        assert_eq!(
+            vec,
+            vec!["3333,3,Monitor,22", "2222,2,Monitor,1"]
+        );
+
+        remove_file(out).expect("No se pudo eliminar el archivo");
+
+        _release_lock();
+    }
+
+    //#[test]
+    //fn realizo_un_test_con_condiciones_y_parentesis(){}
 }

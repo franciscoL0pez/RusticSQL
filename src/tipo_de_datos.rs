@@ -3,14 +3,21 @@ use crate::{
     manejo_de_csv,
 };
 
-///Asumo para hacer la comprobacion de los datos siempre voy a tener un csv con un header y un primer registro
-///Que no este mal ingresado
+/// Enum para representar los distintos tipos de datos
+/// - String: Para representar un string
+/// - Interger: Para representar un numero
 #[derive(Debug)]
 pub enum Dato {
     String(String),
     Interger(i64),
 }
-///Convierto los valores de la 2 linea de mi csv a datos
+/// ---Asumo que siempre el csv tiene 1 lienea ademas del header para poder saber los tipos de datos---
+/// Funcion que se encarga de convertir los valores de la 2 linea de mi csv a datos
+/// # Recibe por parametro la ruta del csv
+/// - Leo la 2 linea de mi csv
+/// - Convierto los valores a datos
+/// - Devuelvo los datos convertidos
+/// - Si no se puede convertir devuelvo un error
 pub fn convertir_strings_a_datos_csv(ruta_csv: &String) -> Result<Vec<Dato>, SqlError> {
     let registro = match manejo_de_csv::leer_header(&ruta_csv, 1) {
         Ok(registro) => registro,
@@ -32,6 +39,12 @@ pub fn convertir_strings_a_datos_csv(ruta_csv: &String) -> Result<Vec<Dato>, Sql
     Ok(tipo_de_datos_csv)
 }
 
+/// Funcion que se encarga de convertir los valores a datos
+/// # Recibe por parametro el valor que se quiere convertir
+/// - Si el valor es un numero lo convierto a Interger
+/// - Si no lo convierto a String
+/// - Devuelvo el valor convertido
+/// - Si no se puede convertir devuelvo un error
 pub fn convertir_a_dato(valor: &str) -> Dato {
     if let Ok(numero) = valor.parse::<i64>() {
         Dato::Interger(numero)
@@ -39,7 +52,11 @@ pub fn convertir_a_dato(valor: &str) -> Dato {
         Dato::String(valor.to_string())
     }
 }
-//Me interesa si es true o false para lanzar el erorr
+/// Funcion que se encarga de comparar los datos
+/// # Recibe por parametro el dato que se quiere insertar y el dato que esta en el csv
+/// Comparo los datos
+/// Si son iguales devuelvo true
+/// Si no devuelvo false
 pub fn comparar_datos(dato_consulta: &Dato, dato_csv: &Dato) -> bool {
     match (dato_consulta, dato_csv) {
         (Dato::Interger(_), Dato::Interger(_)) => true,
@@ -47,6 +64,15 @@ pub fn comparar_datos(dato_consulta: &Dato, dato_csv: &Dato) -> bool {
         _ => false,
     }
 }
+
+/// Funcion que se encarga de comprobar si el dato que se quiere insertar es del mismo tipo que el que esta en el csv
+/// # Recibe por parametro el dato que se quiere insertar, la ruta del csv y la posicion de la columna
+/// - Convierte los valores de la 2 linea de mi csv a datos
+/// - Convierte el dato que se quiere insertar a dato
+/// - Compara los datos
+/// - Devuelve el valor del dato que se quiere insertar
+/// - Si no se cumple la condicion devuelve un error
+/// - Si el dato a insertar es vacio devuelve el dato a insertar
 pub fn comprobar_dato(
     dato_consulta: &String,
     ruta_csv: &String,

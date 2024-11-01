@@ -3,6 +3,15 @@ use crate::{
     manejo_de_csv::{self},
     tipo_de_datos,
 };
+/// Returns true if the token is equal to "(".
+pub fn is_left_paren(token: &str) -> bool {
+    token == "("
+}
+
+/// Returns true if the token is equal to ")".
+pub fn is_right_paren(token: &str) -> bool {
+    token == ")"
+}
 
 ///Funcion para obtener la primera palabra de nuestra consulta
 ///#Recibe una cadena por parametro con la consulta completa
@@ -82,6 +91,9 @@ pub fn separar_datos_update(
             .replace("UPDATE", "")
             .replace("'", "")
             .replace(" ", "")
+            .replace("(", "")
+            .replace(")", "")
+            .replace(" ", "")
             .to_string();
         let valores = partes[1].trim().trim_end_matches(';');
 
@@ -92,8 +104,10 @@ pub fn separar_datos_update(
                     .map(|s| s.to_string().replace("'", ""))
                     .collect();
                 let claves: Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
+                
 
                 Ok((nombre_del_csv, campos_set, claves))
+
             } else {
                 Err(errors::SqlError::InvalidSyntax)
             }
@@ -122,6 +136,8 @@ pub fn separar_datos_delete(consulta_sql: &str) -> Result<(String, Vec<String>),
             .replace("DELETE", "")
             .replace("FROM", "")
             .trim()
+            .replace("(", "")
+            .replace(")", "")
             .replace(" ", "");
         let condiciones = partes[1]
             .trim_end_matches(';')
@@ -153,6 +169,8 @@ pub fn separar_datos_select(consulta_sql: &str) -> Result<(String, String, Vec<S
                 .trim()
                 .replace("SELECT", "")
                 .replace("'", "")
+                .replace("(", "")
+                .replace(")", "")
                 .replace(" ", "")
                 .to_string();
 
@@ -218,8 +236,14 @@ pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<Strin
 }
 
 ///Funcion para crear una matriz a la hora de utilizar el INSERT con multiples valores
-///CAMBIAR LA DOC!
-///
+/// #Recibe por parametro los valores, las columnas, el header y la ruta del csv
+/// -Reemplaza los parentesis por comas para poder separar los valores
+/// -Itera sobre los valores y los separa por comas
+/// -Crea un vector con la cantidad de columnas del header y lo llena con strings vacios
+/// -Itera sobre los valores y los coloca en la posicion correspondiente
+/// -Si no se ingreso una columna se lanza un error
+/// -Si el valor ingresado no es correcto se lanza un error
+/// -Finalmente devuelve una matriz con los valores ingresados
 
 pub fn crear_matriz(
     valores: String,
