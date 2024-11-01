@@ -267,9 +267,9 @@ pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, 
 
 #[cfg(test)]
 mod tests {
-    use std::fs::remove_file;
-    use crate::consultas::lock_test::{_acquire_lock,_release_lock};
     use super::*;
+    use crate::consultas::lock_test::{_acquire_lock, _release_lock};
+    use std::fs::remove_file;
 
     #[test]
     fn test01leer_header_y_devolverlo() {

@@ -8,11 +8,8 @@ pub fn _archivo_temp(nombre: &str) -> String {
     format!("{}_{}.csv", nombre, id)
 }
 
-
 pub fn _acquire_lock() {
-    while _LOCK.swap(true, Ordering::Acquire) {
-       
-    }
+    while _LOCK.swap(true, Ordering::Acquire) {}
 }
 
 pub fn _release_lock() {

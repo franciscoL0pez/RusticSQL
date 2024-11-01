@@ -51,11 +51,14 @@ pub fn insert(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        consultas::lock_test::{_acquire_lock, _release_lock},
+        errors, realizar_consulta,
+    };
     use std::{
         fs::{remove_file, File},
         io::{BufRead, BufReader, BufWriter, Write},
     };
-    use crate::{consultas::lock_test::{_acquire_lock,_release_lock}, errors, realizar_consulta};
 
     #[test]
     fn test_inserto_una_nueva_fila_a_un_csv() {
@@ -168,7 +171,7 @@ mod tests {
         assert_eq!(linea, "2,juan,");
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
-        
+
         _release_lock();
     }
     //Si me tiran una columna que no esta en el header devuelvo un error de columna invalida

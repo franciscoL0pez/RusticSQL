@@ -17,7 +17,6 @@ pub fn delete(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
         Ok(header) => header,
 
         Err(e) => {
-           
             return Err(e);
         }
     };
@@ -26,79 +25,109 @@ pub fn delete(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
     Ok(())
 }
 
-#[cfg(test)] 
+#[cfg(test)]
 mod tests {
-    use std::{fs::{remove_file, File}, io::{BufRead, BufReader, BufWriter, Write}};
+    use std::{
+        fs::{remove_file, File},
+        io::{BufRead, BufReader, BufWriter, Write},
+    };
 
-    use crate::{consultas::lock_test::{_acquire_lock, _archivo_temp, _release_lock}, realizar_consulta};
-
-    #[test]
-    fn realizo_un_delete_con_una_condicion(){
-    _acquire_lock();
-
-    let nombre_del_csv = _archivo_temp("delete_test1");
-
-    let archivo = File::create(&nombre_del_csv).expect("No se pudo crear el archivo");
-    let mut writer = BufWriter::new(archivo);
-
-    writeln!(writer, "id,nombre,apellido").expect("No se pudo escribir el header");
-    writeln!(writer, "1,carlos,lopez").expect("No se pudo escribir la fila");
-    writeln!(writer, "2,juan,lopez").expect("No se pudo escribir la fila");
-    writeln!(writer, "3,roberto,lopez").expect("No se pudo escribir la fila");
-
-    writer.flush().expect("No se pudo cerrar el archivo correctamente");
-   
-    realizar_consulta(&format!("DELETE FROM {} WHERE id = 2", nombre_del_csv.replace(".csv","")), " ")
-        .expect("No se pudo borrar la fila");
-
-
-    let archivo = File::open(&nombre_del_csv).expect("No se pudo abrir el archivo");
-    let lector = BufReader::new(archivo);
-    let mut lineas = lector.lines();
-    lineas.next();
-
-    //Si se borro la linea deben cambiar de lugar 
-    let linea = lineas.next().expect("No se pudo leer la linea").expect("No se pudo leer la linea");
-    assert_eq!(linea, "1,carlos,lopez");
-    let linea = lineas.next().expect("No se pudo leer la linea").expect("No se pudo leer la linea");
-    assert_eq!(linea, "3,roberto,lopez");
-
-    
-    remove_file(&nombre_del_csv).expect("No se pudo eliminar el archivo");
-    _release_lock();
-    }
+    use crate::{
+        consultas::lock_test::{_acquire_lock, _archivo_temp, _release_lock},
+        realizar_consulta,
+    };
 
     #[test]
-    fn realizo_un_delete_con_and_or_not(){
+    fn realizo_un_delete_con_una_condicion() {
         _acquire_lock();
+
         let nombre_del_csv = _archivo_temp("delete_test1");
 
         let archivo = File::create(&nombre_del_csv).expect("No se pudo crear el archivo");
         let mut writer = BufWriter::new(archivo);
 
-    
         writeln!(writer, "id,nombre,apellido").expect("No se pudo escribir el header");
         writeln!(writer, "1,carlos,lopez").expect("No se pudo escribir la fila");
         writeln!(writer, "2,juan,lopez").expect("No se pudo escribir la fila");
         writeln!(writer, "3,roberto,lopez").expect("No se pudo escribir la fila");
-    
-        writer.flush().expect("No se pudo cerrar el archivo correctamente");
-    
-        realizar_consulta(&format!("DELETE FROM {} WHERE id = 2 or nombre = carlos and apellido = lopez not id = 1" ,nombre_del_csv.replace(".csv","")), " ").expect("No se pudo borrar la fila");
-        
+
+        writer
+            .flush()
+            .expect("No se pudo cerrar el archivo correctamente");
+
+        realizar_consulta(
+            &format!(
+                "DELETE FROM {} WHERE id = 2",
+                nombre_del_csv.replace(".csv", "")
+            ),
+            " ",
+        )
+        .expect("No se pudo borrar la fila");
 
         let archivo = File::open(&nombre_del_csv).expect("No se pudo abrir el archivo");
         let lector = BufReader::new(archivo);
         let mut lineas = lector.lines();
         lineas.next();
 
-        //Si se borro la linea deben cambiar de lugar 
-        let linea = lineas.next().expect("No se pudo leer la linea").expect("No se pudo leer la linea");
+        //Si se borro la linea deben cambiar de lugar
+        let linea = lineas
+            .next()
+            .expect("No se pudo leer la linea")
+            .expect("No se pudo leer la linea");
         assert_eq!(linea, "1,carlos,lopez");
-        let linea = lineas.next().expect("No se pudo leer la linea").expect("No se pudo leer la linea");
+        let linea = lineas
+            .next()
+            .expect("No se pudo leer la linea")
+            .expect("No se pudo leer la linea");
         assert_eq!(linea, "3,roberto,lopez");
 
-  
+        remove_file(&nombre_del_csv).expect("No se pudo eliminar el archivo");
+        _release_lock();
+    }
+
+    #[test]
+    fn realizo_un_delete_con_and_or_not() {
+        _acquire_lock();
+        let nombre_del_csv = _archivo_temp("delete_test1");
+
+        let archivo = File::create(&nombre_del_csv).expect("No se pudo crear el archivo");
+        let mut writer = BufWriter::new(archivo);
+
+        writeln!(writer, "id,nombre,apellido").expect("No se pudo escribir el header");
+        writeln!(writer, "1,carlos,lopez").expect("No se pudo escribir la fila");
+        writeln!(writer, "2,juan,lopez").expect("No se pudo escribir la fila");
+        writeln!(writer, "3,roberto,lopez").expect("No se pudo escribir la fila");
+
+        writer
+            .flush()
+            .expect("No se pudo cerrar el archivo correctamente");
+
+        realizar_consulta(
+            &format!(
+                "DELETE FROM {} WHERE id = 2 or nombre = carlos and apellido = lopez not id = 1",
+                nombre_del_csv.replace(".csv", "")
+            ),
+            " ",
+        )
+        .expect("No se pudo borrar la fila");
+
+        let archivo = File::open(&nombre_del_csv).expect("No se pudo abrir el archivo");
+        let lector = BufReader::new(archivo);
+        let mut lineas = lector.lines();
+        lineas.next();
+
+        //Si se borro la linea deben cambiar de lugar
+        let linea = lineas
+            .next()
+            .expect("No se pudo leer la linea")
+            .expect("No se pudo leer la linea");
+        assert_eq!(linea, "1,carlos,lopez");
+        let linea = lineas
+            .next()
+            .expect("No se pudo leer la linea")
+            .expect("No se pudo leer la linea");
+        assert_eq!(linea, "3,roberto,lopez");
+
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
         _release_lock();
     }

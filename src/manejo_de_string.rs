@@ -187,9 +187,9 @@ pub fn separar_datos_select(consulta_sql: &str) -> Result<(String, String, Vec<S
 ///-Separa el vector en dos strings y luego los mapea en dos vectores que contengan las condiciones y por otro lado el ORDER
 ///-Finalmente devuelve dos vectores uno con el criterio de ordenamiento y otro con las condiciones
 ///-En caso de no contener ORDER devuelve un vector con las condiciones y uno de ordenamiento vacio.
-pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<String>),SqlError>  {
+pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<String>), SqlError> {
     let condiciones = condiciones.join(" ");
-  
+
     let palabras: Vec<&str> = condiciones.split_whitespace().collect();
 
     if let Some(_) = palabras.iter().position(|&x| x == "ORDER") {
@@ -215,9 +215,6 @@ pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<Strin
     } else {
         return Err(errors::SqlError::InvalidSyntax);
     }
-        
-    
-
 }
 
 ///Funcion para crear una matriz a la hora de utilizar el INSERT con multiples valores

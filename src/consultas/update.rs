@@ -36,7 +36,10 @@ mod tests {
         io::{BufRead, BufReader, BufWriter, Write},
     };
 
-    use crate::{consultas::lock_test::{_acquire_lock, _release_lock}, realizar_consulta};
+    use crate::{
+        consultas::lock_test::{_acquire_lock, _release_lock},
+        realizar_consulta,
+    };
 
     #[test]
     fn realizo_un_update_con_una_condicion() {
