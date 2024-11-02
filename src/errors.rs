@@ -1,13 +1,10 @@
 use std::fmt::Display;
-/// Enuma para representar los distintos tipos de errores que pueden ocurrir en la consulta SQL
-///
-/// Los posibles errores son:
-///
+/// Enum para representar los distintos tipos de errores que pueden ocurrir en la consulta SQL
+/// # Posibles errores (Hago los que me piden en el enunciado) :
 /// - `InvalidTable`: Para problemas relacionados con las tablas
 /// - `InvalidColumn`: Para problemas relacionados con las columnas
 /// - `InvalidSyntax`: Para problemas de sintaxis en la consulta
 /// - `Error`: Error generico para otros problemas.
-///
 #[derive(Debug, PartialEq)]
 pub enum SqlError {
     InvalidTable,
