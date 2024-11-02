@@ -4,7 +4,7 @@ use crate::{errors::SqlError, manejo_de_csv, manejo_de_string};
 /// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el update
 pub fn update(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError> {
     let (nombre_del_csv, campos_para_actualizar, condiciones) =
-        match manejo_de_string::separar_datos_update(&consulta_sql) {
+        match manejo_de_string::separar_datos_update(consulta_sql) {
             Ok((nombre_del_csv, campos_para_actualizar, condiciones)) => {
                 (nombre_del_csv, campos_para_actualizar, condiciones)
             }
@@ -23,7 +23,7 @@ pub fn update(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
             return Err(e);
         }
     };
-    
+
     let _ = manejo_de_csv::actualizar_csv(ruta_csv, header, campos_para_actualizar, condiciones);
     Ok(())
 }

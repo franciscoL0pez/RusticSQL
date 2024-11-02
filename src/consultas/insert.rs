@@ -4,7 +4,7 @@ use crate::manejo_de_csv::escribir_csv;
 use crate::{errors::SqlError, manejo_de_csv, manejo_de_string};
 pub fn insert(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError> {
     let (direccion_y_columnas, valores, columnas) =
-        match manejo_de_string::separar_datos(&consulta_sql) {
+        match manejo_de_string::separar_datos(consulta_sql) {
             Ok((direccion_y_columnas, valores, columnas)) => {
                 (direccion_y_columnas, valores, columnas)
             }

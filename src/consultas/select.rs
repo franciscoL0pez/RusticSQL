@@ -83,7 +83,7 @@ fn mostrar_select(
 /// -Finalmente retorna un Ok o un Err
 pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError> {
     let (nombre_csv, mut columnas, condiciones) =
-        match manejo_de_string::separar_datos_select(&consulta_sql) {
+        match manejo_de_string::separar_datos_select(consulta_sql) {
             Ok((nombre_csv, columnas, condiciones)) => (nombre_csv, columnas, condiciones),
 
             Err(e) => {

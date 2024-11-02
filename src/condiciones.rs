@@ -3,7 +3,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 use crate::errors::{self, SqlError};
-use crate::operadores::operadores::Operador;
+
+use crate::operadores::operador::Operador;
 use crate::operadores::operadores_logicos::OpLogico;
 ///Estruct para poder guardar las condiciones (simple o compleja)
 #[derive(Debug, PartialEq)]
@@ -130,7 +131,7 @@ impl Condicion {
 pub fn comparar_con_csv(
     condiciones_parseadas: Condicion,
     ruta_csv: String,
-    header: &Vec<String>,
+    header: &[String],
 ) -> Result<Vec<Vec<String>>, SqlError> {
     let archivo = match File::open(&ruta_csv) {
         Ok(archivo) => archivo,
@@ -175,7 +176,7 @@ pub fn comparar_con_csv(
             matriz.push(fila);
         }
     }
-    matriz.insert(0, header.clone());
+    matriz.insert(0, header.to_owned());
 
     Ok(matriz)
 }

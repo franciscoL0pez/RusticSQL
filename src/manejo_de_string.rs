@@ -53,7 +53,7 @@ pub fn obtener_primera_palabra(cadena: &str) -> Result<String, SqlError> {
     if let Some(palabra) = iterar_en_cadena.next() {
         Ok(palabra.to_string())
     } else {
-        return Err(errors::SqlError::InvalidSyntax);
+        Err(errors::SqlError::InvalidSyntax)
     }
 }
 
@@ -113,7 +113,7 @@ pub fn separar_datos_update(
 ) -> Result<(String, Vec<String>, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
-    if let Some(_) = palabras.iter().position(|&x| x == "SET") {
+    if palabras.iter().any(|&x| x == "SET") {
         let partes: Vec<&str> = consulta_sql.split("SET").collect();
         let nombre_del_csv = partes[0]
             .trim()
@@ -124,7 +124,7 @@ pub fn separar_datos_update(
             .to_string();
         let valores = partes[1].trim().trim_end_matches(';');
 
-        if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
+        if palabras.iter().any(|&x| x == "WHERE") {
             if let Some((campos_a_actualizar, clave)) = valores.split_once("WHERE") {
                 let set_campos: Vec<String> = campos_a_actualizar
                     .split_whitespace()
@@ -156,7 +156,7 @@ pub fn separar_datos_update(
 pub fn separar_datos_delete(consulta_sql: &str) -> Result<(String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
-    if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
+    if palabras.iter().any(|&x| x == "WHERE") {
         let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
 
         let nombre_csv = partes[0]
@@ -184,8 +184,8 @@ pub fn separar_datos_delete(consulta_sql: &str) -> Result<(String, Vec<String>),
 ///-En otro caso devuelve un error
 pub fn separar_datos_select(consulta_sql: &str) -> Result<(String, String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
-    if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
-        if let Some(_) = palabras.iter().position(|&x| x == "FROM") {
+    if palabras.iter().any(|&x| x == "WHERE") {
+        if palabras.iter().any(|&x| x == "FROM") {
             let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
 
             let nombre_csv_y_columnas = partes[0]
@@ -230,8 +230,8 @@ pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<Strin
 
     let palabras: Vec<&str> = condiciones.split_whitespace().collect();
 
-    if let Some(_) = palabras.iter().position(|&x| x == "ORDER") {
-        if let Some(_) = palabras.iter().position(|&x| x == "BY") {
+    if palabras.iter().any(|&x| x == "ORDER") {
+        if palabras.iter().any(|&x| x == "BY") {
             let condiciones = condiciones.split("ORDER BY").collect::<Vec<&str>>();
 
             let ordenamiento = condiciones[1]
@@ -245,10 +245,10 @@ pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<Strin
 
             Ok((condiciones, ordenamiento))
         } else {
-            return Err(errors::SqlError::InvalidSyntax);
+            Err(errors::SqlError::InvalidSyntax)
         }
     } else {
-        return Err(errors::SqlError::InvalidSyntax);
+        Err(errors::SqlError::InvalidSyntax)
     }
 }
 
@@ -261,7 +261,6 @@ pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<Strin
 /// -Si no se ingreso una columna se lanza un error
 /// -Si el valor ingresado no es correcto se lanza un error
 /// -Finalmente devuelve una matriz con los valores ingresados
-
 pub fn crear_matriz(
     valores: String,
     columnas: Vec<String>,
@@ -290,7 +289,7 @@ pub fn crear_matriz(
                     Err(e) => return Err(e),
                 };
 
-                let elemento = match tipo_de_datos::comprobar_dato(elemento, &ruta_csv, pos) {
+                let elemento = match tipo_de_datos::comprobar_dato(elemento, ruta_csv, pos) {
                     Ok(elemento) => elemento,
 
                     Err(e) => return Err(e),

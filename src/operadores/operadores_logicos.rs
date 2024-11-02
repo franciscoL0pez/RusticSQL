@@ -1,5 +1,3 @@
-use crate::errors::{self, SqlError};
-
 ///Enum para representar los distintos tipos de operadores logicos
 #[derive(PartialEq, Debug)]
 pub enum OpLogico {

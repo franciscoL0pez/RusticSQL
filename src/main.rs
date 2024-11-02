@@ -21,7 +21,7 @@ use crate::consultas::update::update;
 
 fn realizar_consulta(consulta_sql: &str, ruta: &str) -> Result<(), errors::SqlError> {
     // Obtener la primera palabra solo una vez
-    let primera_palabra = match manejo_de_string::obtener_primera_palabra(&consulta_sql) {
+    let primera_palabra = match manejo_de_string::obtener_primera_palabra(consulta_sql) {
         Ok(palabra) => palabra,
         Err(e) => {
             eprintln!("{}", e);

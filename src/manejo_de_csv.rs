@@ -9,7 +9,10 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
-
+///Funcion para obtener la posicion de un campo en el header
+/// #Recibe la clave y el header
+/// -Itera en el header y si encuentra la clave devuelve la posicion
+/// -En caso de que no encuentre la clave devuelve un error
 pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, SqlError> {
     let pos = header.iter().position(|s| s == clave);
 
@@ -53,7 +56,7 @@ pub fn leer_header(archivo: &String, linenas_a_ignorar: i64) -> Result<Vec<Strin
 
         Ok(header)
     } else {
-        return Err(errors::SqlError::InvalidTable);
+        Err(errors::SqlError::InvalidTable)
     }
 }
 ///Funcion par obtener la ruta donde se encuentran nuestros csv
@@ -67,10 +70,10 @@ pub fn obtener_ruta_del_csv(ruta: &str, nombre_del_csv: &str) -> String {
 
     if ruta.len() > 3 {
         let ruta_de_csv = format!("{}{}{}{}", ruta, "/", nombre_del_csv, ".csv");
-        return ruta_de_csv;
+        ruta_de_csv
     } else {
         let ruta_de_csv = format!("{}{}", nombre_del_csv, ".csv");
-        return ruta_de_csv;
+        ruta_de_csv
     }
 }
 ///Funcion para escribir una linea en un csv
@@ -120,7 +123,6 @@ pub fn cambiar_valores(
 
         Err(e) => return Err(e),
     };
-    
 
     linea[pos] = valor;
 
@@ -138,7 +140,7 @@ pub fn cambiar_valores(
 /// -En caso contrario devuelve los archivos abiertos
 /// -En caso de que no se pueda abrir o crear un archivo devuelve un error
 fn abrir_y_crear_un_archivo(ruta_csv: &str) -> Result<(File, String, File), SqlError> {
-    let archivo = match File::open(&ruta_csv) {
+    let archivo = match File::open(ruta_csv) {
         Ok(archivo) => archivo,
         Err(_) => {
             return Err(errors::SqlError::Error);
@@ -235,10 +237,12 @@ pub fn actualizar_csv(
 }
 
 ///Funcion para borrar las lineas del csv durante la consulta DELETE
-///#Recibe por parametro el header, ruta del csv y la clave
-///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtiene la posicion donde se encuentra nuestra clave comparandla con el header
-///-En caso de que esta no se encuentre lanza un error
-///-Itera en las lineas del csv y si encontramos que coinciden no los copiamos en nuestro archivo aux
+///#Recibe por parametro el header, ruta del csv y las ccondiciones
+/// -Creamos un archivo auxiliar, leeemos el archivo con los datos originales
+/// -Itera en el csv y si encontramos que las lineas cumplen las condiciones pedidas en la consulta no escribimos en el archivo
+/// -En caso contrario escribimos la linea en nuestro archivo axuliar
+/// -Finalmente renombramos a nuestro archivo original como nuestro archivo aux
+/// -En caso de que no se pueda abrir o crear un archivo devuelve un error
 pub fn borrar_lineas_csv(
     ruta_csv: String,
     header: Vec<String>,

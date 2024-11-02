@@ -19,7 +19,7 @@ pub enum Dato {
 /// - Devuelvo los datos convertidos
 /// - Si no se puede convertir devuelvo un error
 pub fn convertir_strings_a_datos_csv(ruta_csv: &String) -> Result<Vec<Dato>, SqlError> {
-    let registro = match manejo_de_csv::leer_header(&ruta_csv, 1) {
+    let registro = match manejo_de_csv::leer_header(ruta_csv, 1) {
         Ok(registro) => registro,
 
         Err(_e) => {
@@ -58,11 +58,10 @@ pub fn convertir_a_dato(valor: &str) -> Dato {
 /// Si son iguales devuelvo true
 /// Si no devuelvo false
 pub fn comparar_datos(dato_consulta: &Dato, dato_csv: &Dato) -> bool {
-    match (dato_consulta, dato_csv) {
-        (Dato::Interger(_), Dato::Interger(_)) => true,
-        (Dato::String(_), Dato::String(_)) => true,
-        _ => false,
-    }
+    matches!(
+        (dato_consulta, dato_csv),
+        (Dato::Interger(_), Dato::Interger(_)) | (Dato::String(_), Dato::String(_))
+    )
 }
 
 /// Funcion que se encarga de comprobar si el dato que se quiere insertar es del mismo tipo que el que esta en el csv
@@ -78,14 +77,14 @@ pub fn comprobar_dato(
     ruta_csv: &String,
     pos_col: usize,
 ) -> Result<String, SqlError> {
-    if dato_consulta != "" {
+    if !dato_consulta.is_empty() {
         let datos_csv = match convertir_strings_a_datos_csv(ruta_csv) {
             Ok(datos_csv) => datos_csv,
 
             Err(e) => return Err(e),
         };
 
-        let dato_consulta = convertir_a_dato(&dato_consulta);
+        let dato_consulta = convertir_a_dato(dato_consulta);
 
         if comparar_datos(&dato_consulta, &datos_csv[pos_col]) {
             let valor = match dato_consulta {
@@ -95,7 +94,7 @@ pub fn comprobar_dato(
 
             Ok(valor)
         } else {
-            return Err(errors::SqlError::Error);
+            Err(errors::SqlError::Error)
         }
     } else {
         Ok(dato_consulta.to_string())

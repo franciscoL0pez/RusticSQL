@@ -20,7 +20,6 @@ pub fn delete(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
             return Err(e);
         }
     };
-    
 
     let _ = manejo_de_csv::borrar_lineas_csv(ruta_csv, header, condiciones);
     Ok(())
