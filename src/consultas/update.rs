@@ -23,7 +23,7 @@ pub fn update(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
             return Err(e);
         }
     };
-
+    
     let _ = manejo_de_csv::actualizar_csv(ruta_csv, header, campos_para_actualizar, condiciones);
     Ok(())
 }

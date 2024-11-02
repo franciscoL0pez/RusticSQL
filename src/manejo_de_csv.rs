@@ -1,4 +1,3 @@
-use crate::condiciones;
 use crate::errors;
 use crate::errors::SqlError;
 use crate::parseador_recursivo::parsear_condicion;
@@ -121,6 +120,7 @@ pub fn cambiar_valores(
 
         Err(e) => return Err(e),
     };
+    
 
     linea[pos] = valor;
 
@@ -305,7 +305,6 @@ pub fn borrar_lineas_csv(
 mod tests {
     use super::*;
     use crate::consultas::lock_test::{_acquire_lock, _release_lock};
-    use std::fs::remove_file;
 
     #[test]
     fn test01leer_header_y_devolverlo() {
