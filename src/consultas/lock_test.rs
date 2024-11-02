@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 static _LOCK: AtomicBool = AtomicBool::new(false);
 
 static _TEST_ID: AtomicUsize = AtomicUsize::new(0);
+/// -------Funciones especificas para no tener problemas al correr los test ---------
 
 /// Funcion para generar un nombre de archivo temporal
 /// #Recibe el nombre del archivo y le agrega un numero de test
