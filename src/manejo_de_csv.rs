@@ -183,7 +183,7 @@ pub fn actualizar_csv(
     let condiciones: Vec<&str> = condiciones.iter().map(|s| s.as_str()).collect();
     let mut pos = 0;
 
-    let condiciones_parseadas = match parsear_condicion(&condiciones, &mut pos) {
+    let condiciones_parseadas = match parsear_condicion(&condiciones, &mut pos, &header) {
         Ok(condiciones) => condiciones,
         Err(e) => {
             return Err(e);
@@ -259,8 +259,8 @@ pub fn borrar_lineas_csv(
 
     let condiciones: Vec<&str> = condiciones.iter().map(|s| s.as_str()).collect();
     let mut pos = 0;
-
-    let condiciones_parseadas = match parsear_condicion(&condiciones, &mut pos) {
+    
+    let condiciones_parseadas = match parsear_condicion(&condiciones, &mut pos, &header) {
         Ok(condiciones) => condiciones,
         Err(e) => {
             return Err(e);

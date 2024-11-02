@@ -1,7 +1,7 @@
 use crate::{errors::SqlError, manejo_de_csv, manejo_de_string};
 
 ///Funcion que se encarga de manejar la consulta "UPDATE"
-/// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el delete
+/// #Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el delete
 pub fn delete(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError> {
     let (nombre_del_csv, condiciones) = match manejo_de_string::separar_datos_delete(consulta_sql) {
         Ok((nombre_del_csv, condiciones)) => (nombre_del_csv, condiciones),

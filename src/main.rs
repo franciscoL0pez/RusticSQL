@@ -44,9 +44,9 @@ fn main() {
     let consulta_completa: Vec<String> = std::env::args().collect();
 
     let ruta = &consulta_completa[1];
-    println!("{}", ruta);
+
     let consulta_sql: &String = &consulta_completa[2];
-    println!("{}", consulta_sql);
+
     match realizar_consulta(consulta_sql, ruta) {
         Ok(_) => (),
         Err(e) => eprintln!("{}", e),

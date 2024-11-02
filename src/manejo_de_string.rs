@@ -156,7 +156,8 @@ pub fn separar_datos_update(
 pub fn separar_datos_delete(consulta_sql: &str) -> Result<(String, Vec<String>), SqlError> {
     let palabras: Vec<&str> = consulta_sql.split_whitespace().collect();
 
-    if palabras.iter().any(|&x| x == "WHERE") {
+    if palabras.iter().any(|&x| x == "WHERE") && palabras.iter().any(|&x| x == "FROM") {
+        
         let partes: Vec<&str> = consulta_sql.split("WHERE").collect();
 
         let nombre_csv = partes[0]

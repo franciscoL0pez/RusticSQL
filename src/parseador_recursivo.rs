@@ -11,13 +11,17 @@ use crate::{
 /// - Puede devolver una condicion simple o compleja dependiendo de los tokens que reciba
 /// - Retorna una Condicion o un Error en caso de que falle
 ///   (Dejo los tests como ejemplos)
-pub fn parsear_condicion(tokens: &Vec<&str>, pos: &mut usize) -> Result<Condicion, SqlError> {
-    let mut left = parsear_or(tokens, pos)?;
+pub fn parsear_condicion(
+    tokens: &Vec<&str>,
+    pos: &mut usize,
+    header: &Vec<String>,
+) -> Result<Condicion, SqlError> {
+    let mut left = parsear_or(tokens, pos, header)?;
 
     while let Some(token) = tokens.get(*pos) {
         if es_or(token) {
             *pos += 1;
-            let right = parsear_or(tokens, pos)?;
+            let right = parsear_or(tokens, pos, header)?;
             left = Condicion::new_compleja(Some(left), OpLogico::Or, right);
         } else {
             break;
@@ -27,13 +31,17 @@ pub fn parsear_condicion(tokens: &Vec<&str>, pos: &mut usize) -> Result<Condicio
     Ok(left)
 }
 
-fn parsear_or(tokens: &Vec<&str>, pos: &mut usize) -> Result<Condicion, SqlError> {
-    let mut left = parsear_and(tokens, pos)?;
+fn parsear_or(
+    tokens: &Vec<&str>,
+    pos: &mut usize,
+    header: &Vec<String>,
+) -> Result<Condicion, SqlError> {
+    let mut left = parsear_and(tokens, pos, header)?;
 
     while let Some(token) = tokens.get(*pos) {
         if es_and(token) {
             *pos += 1;
-            let right = parsear_and(tokens, pos)?;
+            let right = parsear_and(tokens, pos, header)?;
             left = Condicion::new_compleja(Some(left), OpLogico::And, right);
         } else {
             break;
@@ -42,25 +50,33 @@ fn parsear_or(tokens: &Vec<&str>, pos: &mut usize) -> Result<Condicion, SqlError
     Ok(left)
 }
 
-fn parsear_and(tokens: &Vec<&str>, pos: &mut usize) -> Result<Condicion, SqlError> {
+fn parsear_and(
+    tokens: &Vec<&str>,
+    pos: &mut usize,
+    header: &Vec<String>,
+) -> Result<Condicion, SqlError> {
     if let Some(token) = tokens.get(*pos) {
         if es_not(token) {
             *pos += 1;
-            let expr = parsear_base(tokens, pos)?;
+            let expr = parsear_base(tokens, pos, header)?;
             Ok(Condicion::new_compleja(None, OpLogico::Not, expr))
         } else {
-            parsear_base(tokens, pos)
+            parsear_base(tokens, pos, header)
         }
     } else {
-        parsear_base(tokens, pos)
+        parsear_base(tokens, pos, header)
     }
 }
 
-fn parsear_base(tokens: &Vec<&str>, pos: &mut usize) -> Result<Condicion, SqlError> {
+fn parsear_base(
+    tokens: &Vec<&str>,
+    pos: &mut usize,
+    header: &Vec<String>,
+) -> Result<Condicion, SqlError> {
     if let Some(token) = tokens.get(*pos) {
         if parentesis_izquierdo(token) {
             *pos += 1;
-            let expr = parsear_condicion(tokens, pos)?;
+            let expr = parsear_condicion(tokens, pos, header)?;
             let next_token = tokens.get(*pos).ok_or(SqlError::Error)?;
             if partentesis_derecho(next_token) {
                 *pos += 1;
@@ -69,7 +85,12 @@ fn parsear_base(tokens: &Vec<&str>, pos: &mut usize) -> Result<Condicion, SqlErr
                 Err(SqlError::Error)
             }
         } else {
-            let simple_condicion = Condicion::new_simple_cond(tokens, pos)?;
+            let simple_condicion = match Condicion::new_simple_cond(tokens, pos, header) {
+                Ok(condicion) => condicion,
+                Err(e) => {
+                    println!("{}", e);
+                    return Err(e)}
+            };
             Ok(simple_condicion)
         }
     } else {
@@ -85,9 +106,10 @@ mod tests {
     #[test]
     fn parseo_una_condicion_simple() {
         //El operador podria ser >, <, =
+        let header = vec!["producto".to_string()];
         let tokens = vec!["producto", "=", "Monitor"];
         let mut pos = 0;
-        let condicion = parsear_condicion(&tokens, &mut pos).unwrap();
+        let condicion = parsear_condicion(&tokens, &mut pos, &header).unwrap();
         assert_eq!(
             condicion,
             Condicion::new_simple("producto", "=", "Monitor").unwrap()
@@ -96,48 +118,59 @@ mod tests {
 
     #[test]
     fn parseo_una_condicion_con_or() {
+        let header = vec!["producto".to_string(), "precio".to_string()];
         let tokens = vec!["producto", "=", "Monitor", "OR", "precio", ">", "100"];
         let mut pos = 0;
-        let condicion = parsear_condicion(&tokens, &mut pos).unwrap();
+        let condicion = parsear_condicion(&tokens, &mut pos, &header).unwrap();
         assert_eq!(
             condicion,
             Condicion::new_compleja(
                 Some(Condicion::new_simple("producto", "=", "Monitor").unwrap()),
                 OpLogico::Or,
-                Condicion::new_simple("precio", ">", "100").unwrap()
+                Condicion::new_simple("precio", ">", "100").unwrap(),
             )
         );
     }
 
     #[test]
     fn parseo_una_condicion_con_and_y_or() {
+        let header = vec![
+            "producto".to_string(),
+            "precio".to_string(),
+            "marca".to_string(),
+        ];
         let tokens = vec![
             "producto", "=", "Monitor", "AND", "precio", ">", "100", "OR", "marca", "=", "LG",
         ];
         let mut pos = 0;
-        let condicion = parsear_condicion(&tokens, &mut pos).unwrap();
+        let condicion = parsear_condicion(&tokens, &mut pos, &header).unwrap();
         assert_eq!(
             condicion,
             Condicion::new_compleja(
                 Some(Condicion::new_compleja(
                     Some(Condicion::new_simple("producto", "=", "Monitor").unwrap()),
                     OpLogico::And,
-                    Condicion::new_simple("precio", ">", "100").unwrap()
+                    Condicion::new_simple("precio", ">", "100").unwrap(),
                 )),
                 OpLogico::Or,
-                Condicion::new_simple("marca", "=", "LG").unwrap()
+                Condicion::new_simple("marca", "=", "LG").unwrap(),
             )
         );
     }
 
     #[test]
     fn parseo_un_condicion_con_not_and_y_or() {
+        let header = vec![
+            "producto".to_string(),
+            "precio".to_string(),
+            "marca".to_string(),
+        ];
         let tokens = vec![
             "NOT", "(", "producto", "=", "Monitor", "AND", "precio", ">", "100", ")", "OR",
             "marca", "=", "LG",
         ];
         let mut pos = 0;
-        let condicion = parsear_condicion(&tokens, &mut pos).unwrap();
+        let condicion = parsear_condicion(&tokens, &mut pos, &header).unwrap();
 
         assert_eq!(
             condicion,
@@ -148,23 +181,28 @@ mod tests {
                     Condicion::new_compleja(
                         Some(Condicion::new_simple("producto", "=", "Monitor").unwrap()),
                         OpLogico::And,
-                        Condicion::new_simple("precio", ">", "100").unwrap()
-                    )
+                        Condicion::new_simple("precio", ">", "100").unwrap(),
+                    ),
                 )),
                 OpLogico::Or,
-                Condicion::new_simple("marca", "=", "LG").unwrap()
+                Condicion::new_simple("marca", "=", "LG").unwrap(),
             )
         );
     }
 
     #[test]
     fn parseo_una_condicion_con_parentesis() {
+        let header = vec![
+            "producto".to_string(),
+            "precio".to_string(),
+            "marca".to_string(),
+        ];
         let tokens = vec![
             "producto", "=", "Monitor", "AND", "(", "precio", ">", "100", "OR", "marca", "=", "LG",
             ")",
         ];
         let mut pos = 0;
-        let condicion = parsear_condicion(&tokens, &mut pos).unwrap();
+        let condicion = parsear_condicion(&tokens, &mut pos, &header).unwrap();
         assert_eq!(
             condicion,
             Condicion::new_compleja(
@@ -173,8 +211,8 @@ mod tests {
                 Condicion::new_compleja(
                     Some(Condicion::new_simple("precio", ">", "100").unwrap()),
                     OpLogico::Or,
-                    Condicion::new_simple("marca", "=", "LG").unwrap()
-                )
+                    Condicion::new_simple("marca", "=", "LG").unwrap(),
+                ),
             )
         );
     }

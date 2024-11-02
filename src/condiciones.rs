@@ -22,9 +22,22 @@ pub enum Condicion {
 }
 
 impl Condicion {
-    pub fn new_simple_cond(tokens: &[&str], pos: &mut usize) -> Result<Self, SqlError> {
+    pub fn new_simple_cond(
+        tokens: &[&str],
+        pos: &mut usize,
+        header: &[String],
+    ) -> Result<Self, SqlError> {
+        
         if let Some(campo) = tokens.get(*pos) {
+           
             *pos += 1;
+
+            if !header.contains(&campo.to_string()) {
+                //printeo el error y lo devuelo
+                
+                return Err(SqlError::InvalidColumn);
+                
+            }
 
             if let Some(operadores) = tokens.get(*pos) {
                 *pos += 1;
