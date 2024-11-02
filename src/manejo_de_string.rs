@@ -3,14 +3,43 @@ use crate::{
     manejo_de_csv::{self},
     tipo_de_datos,
 };
-/// Returns true if the token is equal to "(".
-pub fn is_left_paren(token: &str) -> bool {
+/// Retorno true si el parentesis derecho
+pub fn parentesis_izquierdo(token: &str) -> bool {
     token == "("
 }
 
-/// Returns true if the token is equal to ")".
-pub fn is_right_paren(token: &str) -> bool {
+/// Retorna false si es el parentesis derecho
+pub fn partentesis_derecho(token: &str) -> bool {
     token == ")"
+}
+
+pub fn separar_condiciones(condiciones: &str) -> Vec<String> {
+    let mut condiciones_separadas: Vec<String> = Vec::new();
+    let mut palabra_actual = String::new();
+
+    for c in condiciones.chars() {
+        if c.is_whitespace() {
+            if !palabra_actual.is_empty() {
+                condiciones_separadas.push(palabra_actual.clone());
+                palabra_actual.clear();
+            }
+        } else if c == '(' || c == ')' {
+            if !palabra_actual.is_empty() {
+                condiciones_separadas.push(palabra_actual.clone());
+                palabra_actual.clear();
+            }
+
+            condiciones_separadas.push(c.to_string());
+        } else {
+            palabra_actual.push(c);
+        }
+    }
+
+    if !palabra_actual.is_empty() {
+        condiciones_separadas.push(palabra_actual);
+    }
+
+    condiciones_separadas
 }
 
 ///Funcion para obtener la primera palabra de nuestra consulta
@@ -91,23 +120,21 @@ pub fn separar_datos_update(
             .replace("UPDATE", "")
             .replace("'", "")
             .replace(" ", "")
-            .replace("(", "")
-            .replace(")", "")
             .replace(" ", "")
             .to_string();
         let valores = partes[1].trim().trim_end_matches(';');
 
         if let Some(_) = palabras.iter().position(|&x| x == "WHERE") {
             if let Some((campos_a_actualizar, clave)) = valores.split_once("WHERE") {
-                let campos_set: Vec<String> = campos_a_actualizar
+                let set_campos: Vec<String> = campos_a_actualizar
                     .split_whitespace()
                     .map(|s| s.to_string().replace("'", ""))
                     .collect();
-                let claves: Vec<String> = clave.split_whitespace().map(|s| s.to_string()).collect();
-                
+                //SI encuentro un parente tambien lo separo como si fuera un solo caracter
 
-                Ok((nombre_del_csv, campos_set, claves))
-
+                let condiciones: Vec<String> = separar_condiciones(clave);
+                println!("COndiciones {:?}", condiciones);
+                Ok((nombre_del_csv, set_campos, condiciones))
             } else {
                 Err(errors::SqlError::InvalidSyntax)
             }
@@ -139,11 +166,7 @@ pub fn separar_datos_delete(consulta_sql: &str) -> Result<(String, Vec<String>),
             .replace("(", "")
             .replace(")", "")
             .replace(" ", "");
-        let condiciones = partes[1]
-            .trim_end_matches(';')
-            .split_whitespace()
-            .map(|s| s.to_string().replace("'", ""))
-            .collect();
+        let condiciones = separar_condiciones(&partes[1].trim_end_matches(';').replace("'", ""));
 
         Ok((nombre_csv, condiciones))
     } else {
@@ -184,11 +207,8 @@ pub fn separar_datos_select(consulta_sql: &str) -> Result<(String, String, Vec<S
                 .replace(")", "")
                 .to_string();
 
-            let condiciones = partes[1].trim_end_matches(';');
-            let condiciones: Vec<String> = condiciones
-                .split_whitespace()
-                .map(|s| s.to_string())
-                .collect();
+            let condiciones = partes[1].trim_end_matches(';').replace("'", "");
+            let condiciones = separar_condiciones(&condiciones);
 
             Ok((nombre_csv, columnas, condiciones))
         } else {
@@ -221,10 +241,7 @@ pub fn separar_order(condiciones: Vec<String>) -> Result<(Vec<String>, Vec<Strin
 
             let condiciones = condiciones[0];
 
-            let condiciones: Vec<String> = condiciones
-                .split_whitespace()
-                .map(|s| s.to_string())
-                .collect();
+            let condiciones = separar_condiciones(condiciones);
 
             Ok((condiciones, ordenamiento))
         } else {

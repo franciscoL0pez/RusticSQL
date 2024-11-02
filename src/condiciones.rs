@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 use crate::errors::{self, SqlError};
-use crate::operadores::operadores_logicos::OpLogico;
 use crate::operadores::operadores::Operador;
+use crate::operadores::operadores_logicos::OpLogico;
 ///Estruct para poder guardar las condiciones (simple o compleja)
 #[derive(Debug, PartialEq)]
 pub enum Condicion {
@@ -20,10 +20,8 @@ pub enum Condicion {
     },
 }
 
-
-impl Condicion{
-
-    pub fn new_simple_cond(tokens: &[&str], pos: &mut usize) -> Result<Self, SqlError>{
+impl Condicion {
+    pub fn new_simple_cond(tokens: &[&str], pos: &mut usize) -> Result<Self, SqlError> {
         if let Some(campo) = tokens.get(*pos) {
             *pos += 1;
 
@@ -72,59 +70,54 @@ impl Condicion{
     }
 
     pub fn execute(&self, fila: &HashMap<String, String>) -> Result<bool, SqlError> {
-            let op_result: Result<bool, SqlError> = match &self {
-                Condicion::Simple {
-                    campo,
-                    operadores,
-                    valor,
-                } => {
-                    let y = valor;
-                    if let Some(x) = fila.get(campo) {
-                    
-                        match operadores {
-                            Operador::Menor => Ok(x < y),
-                            Operador::Mayor => Ok(x > y),
-                            Operador::Igual => Ok(x == y),
-                        }
+        let op_result: Result<bool, SqlError> = match &self {
+            Condicion::Simple {
+                campo,
+                operadores,
+                valor,
+            } => {
+                let y = valor;
+                if let Some(x) = fila.get(campo) {
+                    match operadores {
+                        Operador::Menor => Ok(x < y),
+                        Operador::Mayor => Ok(x > y),
+                        Operador::Igual => Ok(x == y),
+                    }
+                } else {
+                    Err(SqlError::Error)
+                }
+            }
+            Condicion::Compleja {
+                izquierda,
+                operadores,
+                derecha,
+            } => match operadores {
+                OpLogico::Not => {
+                    let result = derecha.execute(fila)?;
+                    Ok(!result)
+                }
+                OpLogico::Or => {
+                    if let Some(izquierda) = izquierda {
+                        let izquierda_result = izquierda.execute(fila)?;
+                        let derecha_result = derecha.execute(fila)?;
+                        Ok(izquierda_result || derecha_result)
                     } else {
                         Err(SqlError::Error)
                     }
                 }
-                Condicion::Compleja {
-                    izquierda,
-                    operadores,
-                    derecha,
-                } => match operadores {
-                    OpLogico::Not => {
-                        let result = derecha.execute(fila)?;
-                        Ok(!result)
+                OpLogico::And => {
+                    if let Some(izquierda) = izquierda {
+                        let izquierda_result = izquierda.execute(fila)?;
+                        let derecha_result = derecha.execute(fila)?;
+                        Ok(izquierda_result && derecha_result)
+                    } else {
+                        Err(SqlError::Error)
                     }
-                    OpLogico::Or => {
-                        if let Some(izquierda) = izquierda {
-                            let izquierda_result = izquierda.execute(fila)?;
-                            let derecha_result = derecha.execute(fila)?;
-                            Ok(izquierda_result || derecha_result)
-                        } else {
-                            Err(SqlError::Error)
-                        }
-                    }
-                    OpLogico::And => {
-                        if let Some(izquierda) = izquierda {
-                            let izquierda_result = izquierda.execute(fila)?;
-                            let derecha_result = derecha.execute(fila)?;
-                            Ok(izquierda_result && derecha_result)
-                        } else {
-                            Err(SqlError::Error)
-                        }
-                    }
-                },
-            };
-            op_result
-        }
-
-
-
-
+                }
+            },
+        };
+        op_result
+    }
 }
 
 ///Funcion para comparar las lineas del csv y ver si cumplen las condiciones ingresadas
@@ -139,7 +132,6 @@ pub fn comparar_con_csv(
     ruta_csv: String,
     header: &Vec<String>,
 ) -> Result<Vec<Vec<String>>, SqlError> {
-
     let archivo = match File::open(&ruta_csv) {
         Ok(archivo) => archivo,
         Err(_) => {
@@ -169,25 +161,17 @@ pub fn comparar_con_csv(
             .iter()
             .zip(linea.split(',').map(|s| s.trim().to_string()))
             .map(|(a, b)| (a.to_string(), b))
-            .collect(); 
+            .collect();
 
-        
         let cumple_condiciones = match condiciones_parseadas.execute(&fila) {
             Ok(resultado) => resultado,
 
             Err(e) => return Err(e),
-        };        
-        
+        };
 
-        
         if cumple_condiciones {
-          
-            let fila: Vec<String> = linea
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .collect();
+            let fila: Vec<String> = linea.split(',').map(|s| s.trim().to_string()).collect();
 
-           
             matriz.push(fila);
         }
     }

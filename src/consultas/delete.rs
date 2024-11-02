@@ -21,7 +21,7 @@ pub fn delete(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
         }
     };
 
-    //let _ = manejo_de_csv::borrar_lineas_csv(ruta_csv, header, condiciones);
+    let _ = manejo_de_csv::borrar_lineas_csv(ruta_csv, header, condiciones);
     Ok(())
 }
 
@@ -67,7 +67,6 @@ mod tests {
         let archivo = File::open(&nombre_del_csv).expect("No se pudo abrir el archivo");
         let lector = BufReader::new(archivo);
         let mut lineas = lector.lines();
-        lineas.next();
 
         //Si se borro la linea deben cambiar de lugar
         let linea = lineas
@@ -104,7 +103,7 @@ mod tests {
 
         realizar_consulta(
             &format!(
-                "DELETE FROM {} WHERE id = 2 or nombre = carlos and apellido = lopez not id = 1",
+                "DELETE FROM {} WHERE id = 2 OR (nombre = carlos AND NOT apellido = lopez)  ",
                 nombre_del_csv.replace(".csv", "")
             ),
             " ",
@@ -114,7 +113,6 @@ mod tests {
         let archivo = File::open(&nombre_del_csv).expect("No se pudo abrir el archivo");
         let lector = BufReader::new(archivo);
         let mut lineas = lector.lines();
-        lineas.next();
 
         //Si se borro la linea deben cambiar de lugar
         let linea = lineas

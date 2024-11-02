@@ -1,7 +1,9 @@
 use crate::condiciones;
 use crate::errors;
 use crate::errors::SqlError;
+use crate::parseador_recursivo::parsear_condicion;
 use crate::tipo_de_datos;
+use std::collections::HashMap;
 use std::fs::remove_file;
 use std::fs::rename;
 use std::fs::File;
@@ -18,8 +20,7 @@ pub fn obtener_posicion_header(clave: &str, header: &[String]) -> Result<usize, 
     }
 }
 
-
-///Leo el header de un csv 
+///Leo el header de un csv
 ///# Recibe la ruta del archivo y la cantidad de lineas a ignorar
 ///- Devuelve un vector con el header
 ///- En caso de que no se pueda leer el archivo devuelve un error
@@ -128,7 +129,6 @@ pub fn cambiar_valores(
     Ok(nueva_linea)
 }
 
-
 /// Funcion para abrir y crear un archivo
 /// #Recibe la ruta del csv
 /// -Abre el archivo y en caso de que no exista devuelve un error
@@ -157,9 +157,6 @@ fn abrir_y_crear_un_archivo(ruta_csv: &str) -> Result<(File, String, File), SqlE
     Ok((archivo, ruta_archivo_temporal, _archivo_tem))
 }
 
-
-
-/* 
 ///Funcion para actualizar las lineas del csv durante la consulta UPDATE
 ///#Recibe por parametro el header, ruta del csv, la clave y los campos a actualizar
 ///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtenemos la posicion donde se encuentra nuestra clave comparandla con el header
@@ -170,8 +167,8 @@ fn abrir_y_crear_un_archivo(ruta_csv: &str) -> Result<(File, String, File), SqlE
 pub fn actualizar_csv(
     ruta_csv: String,
     header: Vec<String>,
-    campos_a_cambiar: Vec<String>,
-    claves: Vec<String>,
+    set_campos: Vec<String>,
+    condiciones: Vec<String>,
 ) -> Result<(), SqlError> {
     let (archivo, ruta_archivo_temporal, _archivo_tem) = match abrir_y_crear_un_archivo(&ruta_csv) {
         Ok((archivo, ruta_archivo_temporal, _archivo_tem)) => {
@@ -181,50 +178,55 @@ pub fn actualizar_csv(
     };
     let lector = BufReader::new(archivo);
 
-    let condiciones_parseadas = match condiciones::procesar_condiciones(claves) {
-        Ok(condiciones) => condiciones,
+    let condiciones: Vec<&str> = condiciones.iter().map(|s| s.as_str()).collect();
+    let mut pos = 0;
 
-        Err(_) => {
-            return Err(errors::SqlError::InvalidSyntax);
+    let condiciones_parseadas = match parsear_condicion(&condiciones, &mut pos) {
+        Ok(condiciones) => condiciones,
+        Err(e) => {
+            return Err(e);
         }
     };
 
-    for linea in lector.lines() {
-        let linea_csv: Vec<String> = match linea {
+    for (index, linea) in lector.lines().enumerate() {
+        //Salteo la primera linea para no leer el header
+        if index == 0 {
+            continue;
+        }
+        let linea = match linea {
             Ok(linea) => linea,
             Err(_) => {
-                let _ = remove_file(&ruta_archivo_temporal);
                 return Err(errors::SqlError::Error);
             }
-        }
-        .split(',')
-        .map(|s| s.trim().to_string())
-        .collect();
+        };
 
-        let cumple_condiciones =
-            match condiciones::comparar_op_logico(&condiciones_parseadas, &linea_csv, &header) {
-                Ok(segundo_resultado) => segundo_resultado,
+        let fila: HashMap<String, String> = header
+            .iter()
+            .zip(linea.split(',').map(|s| s.trim().to_string()))
+            .map(|(a, b)| (a.to_string(), b))
+            .collect();
 
-                Err(_) => {
+        let cumple_condiciones = match condiciones_parseadas.execute(&fila) {
+            Ok(resultado) => resultado,
+
+            Err(e) => return Err(e),
+        };
+
+        let fila: Vec<String> = linea.split(',').map(|s| s.trim().to_string()).collect();
+
+        if cumple_condiciones {
+            let nueva_linea = match cambiar_valores(fila, &set_campos, &header, &ruta_csv) {
+                Ok(nueva_linea) => nueva_linea,
+
+                Err(e) => {
                     let _ = remove_file(&ruta_archivo_temporal);
-                    return Err(errors::SqlError::InvalidSyntax);
+                    return Err(e);
                 }
             };
 
-        if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
-            let nueva_linea =
-                match cambiar_valores(linea_csv, &campos_a_cambiar, &header, &ruta_csv) {
-                    Ok(nueva_linea) => nueva_linea,
-
-                    Err(e) => {
-                        let _ = remove_file(&ruta_archivo_temporal);
-                        return Err(e);
-                    }
-                };
-
             escribir_csv(&ruta_archivo_temporal, &nueva_linea)?;
         } else {
-            escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?;
+            escribir_csv(&ruta_archivo_temporal, &fila.join(",").to_string())?;
         }
     }
 
@@ -237,8 +239,6 @@ pub fn actualizar_csv(
 ///-Creamos un archivo auxiliar, leeemos el archivo con los datos originales y obtiene la posicion donde se encuentra nuestra clave comparandla con el header
 ///-En caso de que esta no se encuentre lanza un error
 ///-Itera en las lineas del csv y si encontramos que coinciden no los copiamos en nuestro archivo aux
-
-
 pub fn borrar_lineas_csv(
     ruta_csv: String,
     header: Vec<String>,
@@ -253,46 +253,53 @@ pub fn borrar_lineas_csv(
 
     let lector = BufReader::new(&archivo);
 
-    let condiciones_parseadas = match condiciones::procesar_condiciones(condiciones) {
-        Ok(condiciones) => condiciones,
+    let condiciones: Vec<&str> = condiciones.iter().map(|s| s.as_str()).collect();
+    let mut pos = 0;
 
+    let condiciones_parseadas = match parsear_condicion(&condiciones, &mut pos) {
+        Ok(condiciones) => condiciones,
         Err(e) => {
             return Err(e);
         }
     };
 
-    for linea in lector.lines() {
-        let linea_csv: Vec<String> = match linea {
+    for (index, linea) in lector.lines().enumerate() {
+        //Salteo la primera linea para no leer el header
+        if index == 0 {
+            continue;
+        }
+        let linea = match linea {
             Ok(linea) => linea,
             Err(_) => {
-                let _ = remove_file(&ruta_archivo_temporal);
                 return Err(errors::SqlError::Error);
             }
-        }
-        .split(',')
-        .map(|s| s.trim().to_string())
-        .collect();
+        };
 
-        let cumple_condiciones =
-            match condiciones::comparar_op_logico(&condiciones_parseadas, &linea_csv, &header) {
-                Ok(segundo_resultado) => segundo_resultado,
+        let fila: HashMap<String, String> = header
+            .iter()
+            .zip(linea.split(',').map(|s| s.trim().to_string()))
+            .map(|(a, b)| (a.to_string(), b))
+            .collect();
 
-                Err(e) => {
-                    let _ = remove_file(&ruta_archivo_temporal);
-                    return Err(e);
-                }
-            };
+        let cumple_condiciones = match condiciones_parseadas.execute(&fila) {
+            Ok(resultado) => resultado,
+
+            Err(e) => return Err(e),
+        };
+
+        let fila: Vec<String> = linea.split(',').map(|s| s.trim().to_string()).collect();
+
         //Si cumple las condicioens no escribo en el archivo ya que la quiero borrar
-        if cumple_condiciones && &linea_csv.join(",") != &header.join(",") {
+        if cumple_condiciones {
+            print!("");
         } else {
-            escribir_csv(&ruta_archivo_temporal, &linea_csv.join(",").to_string())?
+            escribir_csv(&ruta_archivo_temporal, &fila.join(",").to_string())?
         }
     }
 
     let _ = rename(ruta_archivo_temporal, ruta_csv);
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -320,38 +327,4 @@ mod tests {
         let resultado = leer_header(&direccion_del_archivo, 0);
         assert!(resultado.is_err());
     }
-
-    #[test]
-    fn test03se_actualiza_el_csv_segun_una_clave() {
-        _acquire_lock();
-        //Para testear esta funcion creo un archivo de prueba y lo elimino al final
-        let ruta_csv = "test_manejo.csv".to_string();
-        let mut archivo = File::create(&ruta_csv).unwrap();
-
-        let header = vec!["id".to_string(), "nombre".to_string(), "edad".to_string()];
-        let campos = vec!["edad".to_string(), "=".to_string(), "40".to_string()];
-        let clave = vec!["id".to_string(), "=".to_string(), "1".to_string()];
-
-        //Le pongo algunos datos para el test
-        let datos_in = "id,nombre,edad\n1,Juan,25\n2,Maria,30\n";
-        archivo.write_all(datos_in.as_bytes()).unwrap();
-        drop(archivo);
-
-        //Abuso un poquito del echo de que estamos probando un test y uso un clone para pasar ruta_csv
-        actualizar_csv(ruta_csv.clone(), header, campos, clave).unwrap();
-
-        let archivo = File::open(&ruta_csv).unwrap();
-        let lector = BufReader::new(archivo);
-        let mut lineas = lector.lines();
-
-        //Me quedo con la 2 linea ya que luego del header es la que actualice
-        let _ = lineas.next().unwrap();
-        let linea_actualizada = lineas.next().unwrap().unwrap();
-        let linea_esperada = "1,Juan,40".to_string();
-
-        remove_file(&ruta_csv).unwrap();
-        assert_eq!(linea_esperada, linea_actualizada);
-        _release_lock();
-    }
 }
-*/

@@ -12,7 +12,7 @@ pub fn obtener_op(op: &str) -> Result<Operador, SqlError> {
 }
 
 /// Enum para representar los distintos tipos de operadores
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub enum Operador {
     Igual,
     Mayor,

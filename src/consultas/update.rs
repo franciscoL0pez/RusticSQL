@@ -3,10 +3,10 @@ use crate::{errors::SqlError, manejo_de_csv, manejo_de_string};
 ///Funcion que se encarga de manejar la consulta "UPDATE"
 /// Recibe la consulta y la ruta del archivo y llama a las demas funciones para procesarlos y realizar el update
 pub fn update(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError> {
-    let (nombre_del_csv, campos_para_actualizar, donde_actualizar) =
+    let (nombre_del_csv, campos_para_actualizar, condiciones) =
         match manejo_de_string::separar_datos_update(&consulta_sql) {
-            Ok((nombre_del_csv, campos_para_actualizar, donde_actualizar)) => {
-                (nombre_del_csv, campos_para_actualizar, donde_actualizar)
+            Ok((nombre_del_csv, campos_para_actualizar, condiciones)) => {
+                (nombre_del_csv, campos_para_actualizar, condiciones)
             }
 
             Err(e) => {
@@ -24,8 +24,7 @@ pub fn update(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
         }
     };
 
-    //let _ =
-        //manejo_de_csv::actualizar_csv(ruta_csv, header, campos_para_actualizar, donde_actualizar);
+    let _ = manejo_de_csv::actualizar_csv(ruta_csv, header, campos_para_actualizar, condiciones);
     Ok(())
 }
 
@@ -63,7 +62,7 @@ mod tests {
         let archivo = File::open(nombre_del_csv).expect("No se pudo abrir el archivo");
         let lector = BufReader::new(archivo);
         let mut lineas = lector.lines();
-        lineas.next();
+
         let linea = lineas
             .next()
             .expect("No se pudo leer la linea")
@@ -97,7 +96,7 @@ mod tests {
             .expect("No se pudo cerrar el archivo correctamente");
 
         realizar_consulta(
-            "UPDATE test7 SET nombre = fran WHERE id = 2 or nombre = carlos",
+            "UPDATE test7 SET nombre = fran WHERE id = 2 OR (nombre = carlos AND apellido = lopez);",
             " ",
         )
         .expect("No se pudo actualizar la fila");
@@ -105,7 +104,7 @@ mod tests {
         let archivo = File::open(nombre_del_csv).expect("No se pudo abrir el archivo");
         let lector = BufReader::new(archivo);
         let mut lineas = lector.lines();
-        lineas.next();
+
         let linea = lineas
             .next()
             .expect("No se pudo leer la linea")
@@ -130,7 +129,7 @@ mod tests {
         let mut writer = BufWriter::new(archivo);
 
         writeln!(writer, "id,nombre,apellido").expect("No se pudo escribir el header");
-        writeln!(writer, "1,carlos,lopez").expect("No se pudo escribir la fila");
+        writeln!(writer, "1,carlos,mercedes").expect("No se pudo escribir la fila");
         writeln!(writer, "2,juan,lopez").expect("No se pudo escribir la fila");
         writeln!(writer, "3,roberto,lopez").expect("No se pudo escribir la fila");
 
@@ -138,22 +137,21 @@ mod tests {
             .flush()
             .expect("No se pudo cerrar el archivo correctamente");
 
-        realizar_consulta("UPDATE test8 SET nombre = fran WHERE id = 2 or nombre = carlos and apellido = lopez not id = 1", " ").expect("No se pudo actualizar la fila");
+        realizar_consulta(
+            "UPDATE test8 SET nombre = fran WHERE NOT (id = 99 OR apellido = lopez);",
+            " ",
+        )
+        .expect("No se pudo actualizar la fila");
 
         let archivo = File::open(nombre_del_csv).expect("No se pudo abrir el archivo");
         let lector = BufReader::new(archivo);
         let mut lineas = lector.lines();
-        lineas.next();
+
         let linea = lineas
             .next()
             .expect("No se pudo leer la linea")
             .expect("No se pudo leer la linea");
-        assert_eq!(linea, "1,carlos,lopez");
-        let linea = lineas
-            .next()
-            .expect("No se pudo leer la linea")
-            .expect("No se pudo leer la linea");
-        assert_eq!(linea, "2,fran,lopez");
+        assert_eq!(linea, "1,fran,mercedes");
 
         remove_file(nombre_del_csv).expect("No se pudo eliminar el archivo");
         _release_lock();

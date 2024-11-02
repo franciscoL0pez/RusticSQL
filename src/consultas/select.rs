@@ -1,6 +1,6 @@
+use crate::parseador_recursivo::parsear_condicion;
 use crate::{condiciones, errors, manejo_de_csv, manejo_de_string};
 use errors::SqlError;
-use crate::parseador_recursivo::parsear_condicion;
 ///Funcion para ordenar las lineas cuando se hace un SELECT
 /// Recibe la matriz, el header y un vector ordenamiento, con la condicion y si es ASC o DESC
 fn ordenar_matriz(
@@ -38,7 +38,7 @@ fn mostrar_select(
     columnas_selec: String,
     header: &[String],
     ordenamiento: Vec<String>,
-)-> Result<(),SqlError> {
+) -> Result<(), SqlError> {
     let columnas_selec: Vec<String> = columnas_selec
         .split(',')
         .map(|s| s.trim().to_string())
@@ -98,14 +98,10 @@ pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
         }
     };
 
-    
-    //Quiero pasar condiciones de un vector de strings a un vector de referencias de strings
-    //para poder pasarlo a la funcion parsear_condicion
-
     let condiciones: Vec<&str> = condiciones.iter().map(|s| s.as_str()).collect();
     let mut pos = 0;
-    
-    let condiciones_parseadas = match parsear_condicion(&condiciones,&mut pos) {
+
+    let condiciones_parseadas = match parsear_condicion(&condiciones, &mut pos) {
         Ok(condiciones) => condiciones,
         Err(e) => {
             return Err(e);
@@ -120,7 +116,7 @@ pub fn select(consulta_sql: &str, ruta_del_archivo: &str) -> Result<(), SqlError
             return Err(e);
         }
     };
-   
+
     let matriz = match condiciones::comparar_con_csv(condiciones_parseadas, ruta_csv, &header) {
         Ok(matriz) => matriz,
 
@@ -248,8 +244,13 @@ mod tests {
         }
         assert_eq!(
             vec,
-            vec!["104,3,Bajo,20", "122,99,Bateria,20", "1,2,Monitor,22", "3333,3,Monitor,22", "103,1,Teclado,33"]
-            
+            vec![
+                "104,3,Bajo,20",
+                "122,99,Bateria,20",
+                "1,2,Monitor,22",
+                "3333,3,Monitor,22",
+                "103,1,Teclado,33"
+            ]
         );
 
         remove_file(out).expect("No se pudo eliminar el archivo");
@@ -301,7 +302,13 @@ mod tests {
         }
         assert_eq!(
             vec,
-            vec!["103,1,Teclado,33", "1,2,Monitor,22", "3333,3,Monitor,22", "122,99,Bateria,20", "104,3,Bajo,20"]
+            vec![
+                "103,1,Teclado,33",
+                "1,2,Monitor,22",
+                "3333,3,Monitor,22",
+                "122,99,Bateria,20",
+                "104,3,Bajo,20"
+            ]
         );
 
         remove_file(out).expect("No se pudo eliminar el archivo");
@@ -309,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    fn realizo_un_select_con_varias_condiciones2(){
+    fn realizo_un_select_con_varias_condiciones2() {
         _acquire_lock();
         //Para los test del select uso el archivo ordenes.csv
         let output = Command::new("cargo")
@@ -351,10 +358,7 @@ mod tests {
         for linea in lineas {
             vec.push(linea.expect("No se pudo leer la linea"));
         }
-        assert_eq!(
-            vec,
-            vec!["3333,3,Monitor,22", "2222,2,Monitor,1"]
-        );
+        assert_eq!(vec, vec!["3333,3,Monitor,22", "2222,2,Monitor,1"]);
 
         remove_file(out).expect("No se pudo eliminar el archivo");
 
