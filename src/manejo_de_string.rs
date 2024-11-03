@@ -12,7 +12,16 @@ pub fn parentesis_izquierdo(token: &str) -> bool {
 pub fn partentesis_derecho(token: &str) -> bool {
     token == ")"
 }
-
+///Funcion para separar las condiciones de una consulta
+/// #Recibe por parametro un string con las condiciones
+/// -Crea un vector de strings vacio
+/// -Crea un string vacio para almacenar la palabra actual
+/// -Itera sobre las condiciones
+/// -Si el caracter es un espacio y la palabra actual no esta vacia la agrega al vector
+/// -Si el caracter es un parentesis lo agrega al vector
+/// -Si no es un espacio o un parentesis lo agrega a la palabra actual
+/// -Si la palabra actual no esta vacia la agrega al vector
+/// -Retorna el vector con las condiciones separadas o en otro caso un vector vacio
 pub fn separar_condiciones(condiciones: &str) -> Vec<String> {
     let mut condiciones_separadas: Vec<String> = Vec::new();
     let mut palabra_actual = String::new();
