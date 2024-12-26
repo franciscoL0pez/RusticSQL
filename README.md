@@ -1,5 +1,5 @@
 # Taller de Programación catedra Deymonaz
-Realizamos como primer tp individual un SQL rustico.
+ SQL rustico, realizado con el lenguaje de programacion RUST.
 
 ## Cómo correr
 ```bash
