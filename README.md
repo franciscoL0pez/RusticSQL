@@ -58,10 +58,5 @@ DELETE FROM sales WHERE cantidad < 5;
 - Following rows = your data
 - End queries with semicolon (`;`)
 
-## 🧪 Testing
-
-Comprehensive test suite included to verify all SQL operations work correctly.
-
 ---
 
-*Academic project for Programming Workshop - Professor Deymonaz*
