@@ -35,17 +35,20 @@ cargo test
 ## 💡 Example Queries
 
 ```sql
--- Add a new user
-INSERT INTO users (name, age) VALUES ("Alice", 28);
+-- Add a new sale record
+INSERT INTO sales (id, id_cliente, producto, cantidad) VALUES (9, 1500, "Microfono", 5);
 
--- Find adult users, sorted by name
-SELECT * FROM users WHERE age >= 18 ORDER BY name;
+-- Find all monitor sales
+SELECT * FROM sales WHERE producto = "Monitor";
 
--- Update someone's age
-UPDATE users SET age = 29 WHERE name = "Alice";
+-- Get sales with high quantities, sorted by client ID
+SELECT * FROM sales WHERE cantidad > 15 ORDER BY id_cliente;
 
--- Clean up old records
-DELETE FROM users WHERE age < 13;
+-- Update quantity for a specific sale
+UPDATE sales SET cantidad = 25 WHERE id = 3;
+
+-- Remove small quantity orders
+DELETE FROM sales WHERE cantidad < 5;
 ```
 
 ## 🗂️ How it works
